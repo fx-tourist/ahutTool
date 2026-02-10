@@ -5,7 +5,7 @@
         {
             "label": "ui文件->py",
             "type": "shell",
-            "command": "start '${workspaceFolder}/pre_task.py'"
+            "command": "'${workspaceFolder}/pre_task.py'"
         },
 
     ]
