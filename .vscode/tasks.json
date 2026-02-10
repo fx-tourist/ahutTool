@@ -1,0 +1,12 @@
+{
+
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "ui文件->py",
+            "type": "shell",
+            "command": "start '${workspaceFolder}/pre_task.py'"
+        },
+
+    ]
+}
