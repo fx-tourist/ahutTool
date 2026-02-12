@@ -15,8 +15,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QPushButton, QScrollArea,
-    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLayout, QPushButton,
+    QScrollArea, QSizePolicy, QSpacerItem, QVBoxLayout,
+    QWidget)
 
 class Ui_mian(object):
     def setupUi(self, mian):
@@ -27,6 +28,7 @@ class Ui_mian(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.selectTools = QScrollArea(mian)
         self.selectTools.setObjectName(u"selectTools")
+        self.selectTools.setMinimumSize(QSize(150, 0))
         self.selectTools.setMaximumSize(QSize(150, 16777215))
         self.selectTools.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
@@ -84,17 +86,19 @@ class Ui_mian(object):
 
         self.horizontalLayout.addWidget(self.selectTools)
 
-        self.subWidge = QWidget(mian)
-        self.subWidge.setObjectName(u"subWidge")
-        self.verticalLayout_3 = QVBoxLayout(self.subWidge)
+        self.subWidget = QWidget(mian)
+        self.subWidget.setObjectName(u"subWidget")
+        self.verticalLayout_3 = QVBoxLayout(self.subWidget)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.subWidgeLayout = QVBoxLayout()
-        self.subWidgeLayout.setObjectName(u"subWidgeLayout")
+        self.subWidgetLayout = QVBoxLayout()
+        self.subWidgetLayout.setSpacing(0)
+        self.subWidgetLayout.setObjectName(u"subWidgetLayout")
+        self.subWidgetLayout.setSizeConstraint(QLayout.SizeConstraint.SetMaximumSize)
 
-        self.verticalLayout_3.addLayout(self.subWidgeLayout)
+        self.verticalLayout_3.addLayout(self.subWidgetLayout)
 
 
-        self.horizontalLayout.addWidget(self.subWidge)
+        self.horizontalLayout.addWidget(self.subWidget)
 
 
         self.retranslateUi(mian)

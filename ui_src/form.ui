@@ -16,6 +16,12 @@
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
     <widget class="QScrollArea" name="selectTools">
+     <property name="minimumSize">
+      <size>
+       <width>150</width>
+       <height>0</height>
+      </size>
+     </property>
      <property name="maximumSize">
       <size>
        <width>150</width>
@@ -144,10 +150,17 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="subWidge" native="true">
+    <widget class="QWidget" name="subWidget" native="true">
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
-       <layout class="QVBoxLayout" name="subWidgeLayout"/>
+       <layout class="QVBoxLayout" name="subWidgetLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="sizeConstraint">
+         <enum>QLayout::SizeConstraint::SetMaximumSize</enum>
+        </property>
+       </layout>
       </item>
      </layout>
     </widget>

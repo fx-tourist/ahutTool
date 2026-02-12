@@ -1,12 +1,25 @@
 {
-
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "ui文件->py",
-            "type": "shell",
-            "command": "'${workspaceFolder}/pre_task.py'"
-        },
-
+            "label": "ui文件->py",  // 任务名称（调用时用）
+            "type": "shell",       // 执行类型：shell（终端命令）
+            "command": "python",   // 核心：指定用python解释器执行
+            "args": [              // 执行参数：传入py文件路径
+                "${workspaceFolder}\\pre_task.py"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",  // Windows指定用cmd执行（可选，默认也会用）
+                    "args": ["/c"]            // /c表示执行完命令后关闭shell
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true  // 设置为默认任务（按Ctrl+Shift+B可直接运行）
+            },
+            "problemMatcher": [],  // 捕获执行输出（空表示不匹配，仅输出日志）
+            "detail": "执行pre_task.py文件（UI文件转Py）"  // 任务描述（可选）
+        }
     ]
 }

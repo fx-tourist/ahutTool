@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 18.0.2, 2026-02-10T17:25:24. -->
+<!-- Written by QtCreator 18.0.2, 2026-02-12T00:36:02. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -155,7 +155,7 @@
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">mian.py</value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">PythonEditor.RunConfiguration.</value>
      <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">D:/Desktop/program learn/uiDesigner/ahutTool/mian.py</value>
-     <value type="bool" key="ProjectExplorer.RunConfiguration.Customized">false</value>
+     <value type="bool" key="ProjectExplorer.RunConfiguration.Customized">true</value>
      <value type="QString" key="ProjectExplorer.RunConfiguration.UniqueId"></value>
      <value type="QString" key="PythonEditor.RunConfiguation.Script">D:\Desktop\program learn\uiDesigner\ahutTool\mian.py</value>
      <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
@@ -192,7 +192,7 @@
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">mian.py</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">PythonEditor.RunConfiguration.</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">D:/Desktop/program learn/uiDesigner/ahutTool/mian.py</value>
-    <value type="bool" key="ProjectExplorer.RunConfiguration.Customized">false</value>
+    <value type="bool" key="ProjectExplorer.RunConfiguration.Customized">true</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.UniqueId"></value>
     <value type="QString" key="PythonEditor.RunConfiguation.Script">D:\Desktop\program learn\uiDesigner\ahutTool\mian.py</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>

@@ -2,4 +2,4 @@
 name = "PySide Widgets Project"
 
 [tool.pyside6-project]
-files = ["form.ui", "login.ui", "mian.py"]
+files = ["mian.py", "ui_src/scoreSearch.ui"]

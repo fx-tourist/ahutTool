@@ -6,15 +6,15 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "console": "internalConsole"
+            "console": "externalTerminal"  
         },
         {
-            "preLaunchTask": "ui文件->py",
             "name": "编译ui文件调试",
+            "preLaunchTask": "ui文件->py",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/mian.py",
-            "console": "internalConsole"
+            "console": "externalTerminal"
         }
     ]
 }
