@@ -113,6 +113,7 @@ class Ui_userInfo(object):
         sizePolicy1.setHeightForWidth(self.messageShow.sizePolicy().hasHeightForWidth())
         self.messageShow.setSizePolicy(sizePolicy1)
         self.messageShow.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.messageShow.setWordWrap(True)
 
         self.gridLayout.addWidget(self.messageShow, 7, 1, 1, 2)
 

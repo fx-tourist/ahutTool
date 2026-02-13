@@ -201,6 +201,9 @@
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
     </widget>
    </item>
    <item row="5" column="1">

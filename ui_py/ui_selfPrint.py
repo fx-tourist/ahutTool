@@ -67,6 +67,8 @@ class Ui_selfPrint(object):
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.messageShow.sizePolicy().hasHeightForWidth())
         self.messageShow.setSizePolicy(sizePolicy1)
+        self.messageShow.setWordWrap(True)
+        self.messageShow.setOpenExternalLinks(False)
 
         self.verticalLayout.addWidget(self.messageShow)
 

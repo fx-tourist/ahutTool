@@ -1,8 +1,8 @@
 # This Python file uses the following encoding: utf-8
 import sys
 import requests
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog
-from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog,QTableView
+from PySide6.QtGui import QPalette,QStandardItemModel,QStandardItem
 from PySide6.QtCore import Qt, QThread, Signal
 from urllib import parse
 import base64,json,time
@@ -15,6 +15,7 @@ from ui_py.ui_form import Ui_mian
 from ui_py.ui_userInfo import Ui_userInfo
 from ui_py.ui_login import Ui_login
 from ui_py.ui_selfPrint import Ui_selfPrint
+from ui_py.ui_examSearch import Ui_examSearch
 #配置
 baseUrl = "http://jwxt.ahut.edu.cn/jsxsd/"
 loginSuf = "xk/LoginToXk"
@@ -22,6 +23,9 @@ userImgUrlSuf = "framework/student/images/zp.jpg"
 cheakLoginStateUrlSuf = "framework/main_index_loadkb.jsp"
 userInfoSuf = "framework/xsMain_new.jsp"
 loginBgUrlSuf = "framework/student/images/xs_bg.jpg"
+semesterUrlSuf = "xsks/xsksap_query"
+examListSuf1 = "xsks/xsksap_list"
+examListSuf2 = "xsks/xsstk_list"
 printListSuf = "view/cjgl/zzdy_list.jsp"
 session = requests.Session()
 session.headers.update({"X-Requested-With" : "XMLHttpRequest"})
@@ -40,6 +44,7 @@ userDepartment = ""
 userMajor = ""
 userClass = ""
 userAvatar = None
+semester = ""
 
 
 #主界面
@@ -55,9 +60,11 @@ class Main(QWidget):
         self.ui_login_widget = Ui_login_widget()
         self.ui_userInfo_widget = Ui_userInfo_widget()
         self.ui_selfPrint_widget = Ui_selfPrint_widget()
+        self.ui_examSearch_widget = Ui_examSearch_widget()
         self.subWidget.addWidget(self.ui_login_widget)
         self.subWidget.addWidget(self.ui_userInfo_widget)
         self.subWidget.addWidget(self.ui_selfPrint_widget)
+        self.subWidget.addWidget(self.ui_examSearch_widget)
         #连接登录成功信号
         self.ui_login_widget.loginSuccess.connect(lambda state,message:self.on_login_result(state,message))
         #登录失效信号
@@ -66,6 +73,7 @@ class Main(QWidget):
         #绑定工具栏的按钮事件
         self.ui.userInfo_button.clicked.connect(lambda :self.enable_Ui_userInfo_widget())
         self.ui.selfPrint_button.clicked.connect(lambda :self.enable_Ui_selfPrint_widget())
+        self.ui.examSearch_button.clicked.connect(lambda :self.enable_Ui_examSearch_widget())
     
     def on_login_result(self, state:bool, message:str):
         if state:
@@ -94,6 +102,16 @@ class Main(QWidget):
         else:
             self.loginExpired("你还没有登录哦~")
 
+    #侧边栏 考试查询被点击
+    def enable_Ui_examSearch_widget(self):
+        print("侧边栏考试查询按钮被点击\n")
+        if logined:
+            restoreAllToolButton(self)
+            self.ui.examSearch_button.setEnabled(False)
+            self.subWidget.setCurrentWidget(self.ui_examSearch_widget)
+        else:
+            self.loginExpired("你还没有登录哦~")
+
 #登录子界面
 class Ui_login_widget(QWidget):
     loginSuccess = Signal(bool, str)
@@ -114,8 +132,9 @@ class Ui_login_widget(QWidget):
         self.ui_login.messageShow.setText(message)
     
     def on_login_button_clicked(self):
-        global userId, userpwd
+        global userId, userpwd,semester
         print("登录按钮被点击\n")
+        semester = ""
         userId = self.ui_login.login_idInput.text()
         userpwd = self.ui_login.login_pwdInput.text()
         if not userId or not userpwd:
@@ -175,6 +194,8 @@ class Ui_userInfo_widget(QWidget):
         self.Ui_userInfo.loginOut_button.clicked.connect(self.loginOut)
         self.getUserInfoThread = None
         self.getuserAvatarThread = None
+        self.getsemesterThread = None
+
 
     def loginExpired(self, state:bool = False,message:str = ""):
         if not state:
@@ -187,7 +208,33 @@ class Ui_userInfo_widget(QWidget):
             return
         login(self, self.loginExpired)
         print("Ui_userInfo_widget显示事件被触发\n")
+
+        #获取当前学期
+        if semester == "":
+            print("正在获取当前学期...\n")
+            self.setMessageShow("正在获取当前学期...",color=Qt.yellow)
+            if not self.getsemesterThread:
+                self.getsemesterThread = GetRequestThread(parse.urljoin(baseUrl, semesterUrlSuf))
+                self.getsemesterThread.resultSignal.connect(self.fillSemester)
+            if not self.getsemesterThread.isRunning():
+                self.getsemesterThread.start()
         return
+
+    def fillSemester(self,state:bool = False,message:str = "",response:requests.Response = None):
+        if not state:
+            self.setMessageShow(message,color=Qt.red)
+            print(message + "\n")
+            return
+        global semester
+        soup = BeautifulSoup(response.text, "lxml")
+        semester = soup.find("option", selected=True)
+        if not semester:
+            self.setMessageShow("获取当前学期失败",color=Qt.red)
+            print("获取当前学期失败\n")
+            return
+        semester = semester.get("value","")
+        self.setMessageShow("当前学期:" + semester,color=Qt.green)
+        print("当前学期:" + semester + "\n")
 
     def loginOut(self):
         global userName
@@ -268,8 +315,6 @@ class Ui_userInfo_widget(QWidget):
             self.setMessageShow("解析用户信息异常:" + str(e),color=Qt.red)
             print("解析用户信息异常:" + str(e) + "\n")
 
-
-    
     def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
         paletter = QPalette()
         paletter.setColor(QPalette.WindowText, color)
@@ -387,7 +432,6 @@ class Ui_selfPrint_widget(QWidget):
         self.setMessageShow(f"{dest} 保存成功!",color=Qt.green)
         print(f"{dest} 保存成功!\n")
        
-
     def showEvent(self, event):
         super().showEvent(event)
         self.getPrintList()
@@ -398,9 +442,119 @@ class Ui_selfPrint_widget(QWidget):
         paletter.setColor(QPalette.WindowText, color)
         self.ui_selfPrint.messageShow.setPalette(paletter)
         self.ui_selfPrint.messageShow.setText(message)
+
+#考试查询界面
+class Ui_examSearch_widget(QWidget):
+    def __init__(self, parent:type = None):
+        super().__init__(parent)
+        self.ui_examSearch = Ui_examSearch()
+        self.ui_examSearch.setupUi(self)
+        self.getExamListThreading1 = None
+        self.getExamListThreading2 = None
+        self.DataModel1 = QStandardItemModel()
+        self.ui_examSearch.examTable1.setModel(self.DataModel1)
+        self.DataModel2 = QStandardItemModel()
+        self.ui_examSearch.examTable2.setModel(self.DataModel2)
+
+    def getExamList(self):
+        self.DataModel1.setRowCount(0)
+        self.DataModel2.setRowCount(0)
+        if not self.getExamListThreading1:
+            self.getExamListThreading1 = PostRequestThread(parse.urljoin(baseUrl, examListSuf1),data={"xnxqid":semester})
+            self.getExamListThreading1.resultSignal.connect(self.fillExamList1)
+        if not self.getExamListThreading1.isRunning():
+            self.getExamListThreading1.start()
+        if not self.getExamListThreading2:
+            self.getExamListThreading2 = PostRequestThread(parse.urljoin(baseUrl, examListSuf2),data={"xnxqid":semester})
+            self.getExamListThreading2.resultSignal.connect(self.fillExamList2)
+        if not self.getExamListThreading2.isRunning():
+            self.getExamListThreading2.start()
+        
+    def fillExamList1(self,state:bool = False,message:str = "",response:requests.Response = None):
+        try:
+            if not state:
+                self.setMessageShow(message,color=Qt.red)
+                print(message + "\n")
+                return
+            soup = BeautifulSoup(response.text, "lxml")
+            examList = soup.find("table",class_ = "Nsb_r_list Nsb_table")
+            if not examList:
+                self.setMessageShow1("获取考试列表1失败",color=Qt.red)
+                print("获取考试列表1失败\n")
+                return
+
+            examList = examList.find_all("tr")
+            self.colCnt = len(examList[0].find_all("th"))
+            self.DataModel1.setColumnCount(self.colCnt)
+            self.DataModel1.setHorizontalHeaderLabels([str(item.text.strip()) for item in examList[0].find_all("th")])
+
+            if len(examList[1].find_all("td")) == 1:
+                print("暂无集中考试\n")
+                self.setMessageShow1("暂无集中考试↑",color=Qt.green)
+                return
+            else:
+                self.setMessageShow1("集中考试↑",color=Qt.yellow)
+
+            for items in examList[1:]:
+                self.DataModel1.appendRow([QStandardItem(str(item.text.strip())) for item in items.find_all("td")])
+            self.ui_examSearch.examTable1.setModel(self.DataModel1)
+        except Exception as e:
+            print("解析考试列表1异常:" + str(e) + "\n")
+            self.setMessageShow("解析考试列表异常1:" + str(e),color=Qt.red)
+    
+    def fillExamList2(self,state:bool = False,message:str = "",response:requests.Response = None):
+        try:
+            if not state:
+                self.setMessageShow(message,color=Qt.red)
+                print(message + "\n")
+                return
+            soup = BeautifulSoup(response.text, "lxml")
+            examList = soup.find("table",class_ = "Nsb_r_list Nsb_table")
+            if not examList:
+                self.setMessageShow("获取考试列表2失败",color=Qt.red)
+                print("获取考试列表2失败\n")
+                return
+            else:
+                self.setMessageShow("分散考试↑",color=Qt.yellow)
+
+            examList = examList.find_all("tr")
+            self.colCnt = len(examList[0].find_all("th"))
+            self.DataModel2.setColumnCount(self.colCnt)
+            self.DataModel2.setHorizontalHeaderLabels([str(item.text.strip()) for item in examList[0].find_all("th")])
+
+            if len(examList[1].find_all("td")) == 1:
+                self.setMessageShow("暂无分散考试↑",color=Qt.green)
+                print("暂无分散考试\n")
+                return
+
+            for items in examList[1:]:
+                self.DataModel2.appendRow([QStandardItem(str(item.text.strip())) for item in items.find_all("td")])
+            self.ui_examSearch.examTable2.setModel(self.DataModel2)
+        except Exception as e:
+            print("解析考试列表2异常:" + str(e) + "\n")
+            self.setMessageShow("解析考试列表异常2:" + str(e),color=Qt.red)
     
 
-
+    def showEvent(self, event):
+        super().showEvent(event)
+        if semester == "":
+            self.setMessageShow("当前学期获取失败,请尝试重新登录",color=Qt.red)
+            return
+        self.getExamList()
+        return
+    
+    def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
+        paletter = QPalette()
+        paletter.setColor(QPalette.WindowText, color)
+        self.ui_examSearch.messageShow.setPalette(paletter)
+        self.ui_examSearch.messageShow.setText(message)
+    
+    def setMessageShow1(self, message:str, color:Qt.GlobalColor = Qt.red):
+        paletter = QPalette()
+        paletter.setColor(QPalette.WindowText, color)
+        self.ui_examSearch.messageShow1.setPalette(paletter)
+        self.ui_examSearch.messageShow1.setText(message)
+    
 #登录线程
 class LoginThread(QThread): 
     global session, userId, userpwd
