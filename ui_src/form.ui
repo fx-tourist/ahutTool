@@ -166,6 +166,12 @@
    </item>
    <item>
     <widget class="QWidget" name="subWidget" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <property name="spacing">
        <number>0</number>
@@ -188,7 +194,7 @@
          <number>0</number>
         </property>
         <property name="sizeConstraint">
-         <enum>QLayout::SizeConstraint::SetMaximumSize</enum>
+         <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
         </property>
        </layout>
       </item>

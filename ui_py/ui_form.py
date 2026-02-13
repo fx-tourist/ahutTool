@@ -90,6 +90,11 @@ class Ui_mian(object):
 
         self.subWidget = QWidget(mian)
         self.subWidget.setObjectName(u"subWidget")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.subWidget.sizePolicy().hasHeightForWidth())
+        self.subWidget.setSizePolicy(sizePolicy)
         self.verticalLayout_3 = QVBoxLayout(self.subWidget)
         self.verticalLayout_3.setSpacing(0)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
@@ -97,7 +102,7 @@ class Ui_mian(object):
         self.subWidgetLayout = QVBoxLayout()
         self.subWidgetLayout.setSpacing(0)
         self.subWidgetLayout.setObjectName(u"subWidgetLayout")
-        self.subWidgetLayout.setSizeConstraint(QLayout.SizeConstraint.SetMaximumSize)
+        self.subWidgetLayout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
 
         self.verticalLayout_3.addLayout(self.subWidgetLayout)
 

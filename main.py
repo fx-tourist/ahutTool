@@ -1,11 +1,11 @@
 # This Python file uses the following encoding: utf-8
 import sys
 import requests
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog,QTableView
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog,QHeaderView
 from PySide6.QtGui import QPalette,QStandardItemModel,QStandardItem
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, QThread, Signal,QDate
 from urllib import parse
-import base64,json,time
+import base64
 from bs4 import BeautifulSoup
 from PySide6.QtGui import QPixmap
 from os import system as CmdCommand
@@ -16,6 +16,7 @@ from ui_py.ui_userInfo import Ui_userInfo
 from ui_py.ui_login import Ui_login
 from ui_py.ui_selfPrint import Ui_selfPrint
 from ui_py.ui_examSearch import Ui_examSearch
+from ui_py.ui_classSchedule import Ui_classSchedule
 #配置
 baseUrl = "http://jwxt.ahut.edu.cn/jsxsd/"
 loginSuf = "xk/LoginToXk"
@@ -27,6 +28,7 @@ semesterUrlSuf = "xsks/xsksap_query"
 examListSuf1 = "xsks/xsksap_list"
 examListSuf2 = "xsks/xsstk_list"
 printListSuf = "view/cjgl/zzdy_list.jsp"
+classScheduleUrlSuf = "framework/main_index_loadkb.jsp"
 session = requests.Session()
 session.headers.update({"X-Requested-With" : "XMLHttpRequest"})
 toolButtonNameList = ["userInfo_button",
@@ -45,6 +47,7 @@ userMajor = ""
 userClass = ""
 userAvatar = None
 semester = ""
+currDate = QDate.currentDate().toString("yyyy-MM-dd")
 
 
 #主界面
@@ -61,10 +64,12 @@ class Main(QWidget):
         self.ui_userInfo_widget = Ui_userInfo_widget()
         self.ui_selfPrint_widget = Ui_selfPrint_widget()
         self.ui_examSearch_widget = Ui_examSearch_widget()
+        self.ui_classSchedule_widget = Ui_classSchedule_widget()
         self.subWidget.addWidget(self.ui_login_widget)
         self.subWidget.addWidget(self.ui_userInfo_widget)
         self.subWidget.addWidget(self.ui_selfPrint_widget)
         self.subWidget.addWidget(self.ui_examSearch_widget)
+        self.subWidget.addWidget(self.ui_classSchedule_widget)
         #连接登录成功信号
         self.ui_login_widget.loginSuccess.connect(lambda state,message:self.on_login_result(state,message))
         #登录失效信号
@@ -74,6 +79,7 @@ class Main(QWidget):
         self.ui.userInfo_button.clicked.connect(lambda :self.enable_Ui_userInfo_widget())
         self.ui.selfPrint_button.clicked.connect(lambda :self.enable_Ui_selfPrint_widget())
         self.ui.examSearch_button.clicked.connect(lambda :self.enable_Ui_examSearch_widget())
+        self.ui.classSchedule_button.clicked.connect(lambda :self.enable_Ui_classSchedule_widget())
     
     def on_login_result(self, state:bool, message:str):
         if state:
@@ -109,6 +115,16 @@ class Main(QWidget):
             restoreAllToolButton(self)
             self.ui.examSearch_button.setEnabled(False)
             self.subWidget.setCurrentWidget(self.ui_examSearch_widget)
+        else:
+            self.loginExpired("你还没有登录哦~")
+
+    #侧边栏 课程表查询被点击
+    def enable_Ui_classSchedule_widget(self):
+        print("侧边栏课程表按钮被点击\n")
+        if logined:
+            restoreAllToolButton(self)
+            self.ui.classSchedule_button.setEnabled(False)
+            self.subWidget.setCurrentWidget(self.ui_classSchedule_widget)
         else:
             self.loginExpired("你还没有登录哦~")
 
@@ -554,7 +570,76 @@ class Ui_examSearch_widget(QWidget):
         paletter.setColor(QPalette.WindowText, color)
         self.ui_examSearch.messageShow1.setPalette(paletter)
         self.ui_examSearch.messageShow1.setText(message)
+
+#课程表界面
+class Ui_classSchedule_widget(QWidget):
+    def __init__(self, parent:type = None):
+        super().__init__(parent)
+        self.ui_classSchedule = Ui_classSchedule()
+        self.ui_classSchedule.setupUi(self)
+        self.ui_classSchedule.dateEdit.setDate(QDate.currentDate())
+        self.getClassScheduleThreading = None
+
+        #绑定查询按钮
+        self.ui_classSchedule.search.clicked.connect(self.getClassSchedule)
+        #绑定tableview
+        self.tableModel = QStandardItemModel()
+
+    def getClassSchedule(self):
+        selectDate = self.ui_classSchedule.dateEdit.date().toString("yyyy-MM-dd")
+        if self.getClassScheduleThreading:
+            if self.getClassScheduleThreading.isRunning():
+                self.setMessageShow("已经有一个查询任务了，请稍后再试",color=Qt.red)
+                print("已经有一个查询任务了，请稍后再试\n")
+                return
+            else:
+                self.getClassScheduleThreading.deleteLater()
+        self.getClassScheduleThreading = PostRequestThread(parse.urljoin(baseUrl, classScheduleUrlSuf),data = {"rq" : selectDate})
+        self.getClassScheduleThreading.resultSignal.connect(self.fillClassSchedule)
+        self.getClassScheduleThreading.start()
+        self.setMessageShow("正在查询课程表..." + selectDate,color=Qt.yellow)
+        print("正在查询课程表...\n")
+        
+    def fillClassSchedule(self,state:bool = False,message:str = "",response:requests.Response = None):
+        try:
+            if not state:
+                self.setMessageShow(message,color=Qt.red)
+                print(message + "\n")
+                return
+            
+            soup = BeautifulSoup(response.text.replace("<br>","\n").replace("</br>","\n").replace("<br/>","\n"), "lxml")
+            items = soup.find_all("tr")
+            colCnt = len(items[0].find_all("th"))
+            self.tableModel.setColumnCount(colCnt)
+            self.tableModel.setRowCount(0)
+            self.tableModel.setHorizontalHeaderLabels([str(item.text.strip()) for item in items[0].find_all("th")])
+
+            if len(items) == 1:
+                self.setMessageShow("暂无课程信息",color=Qt.green)
+                print("暂无课程信息\n")
+                return
+
+            showDetail = self.ui_classSchedule.showDetail.isChecked()
+
+            for item in items[1:]:
+                if showDetail:
+                    self.tableModel.appendRow([QStandardItem( str( td.text if td.find("p") == None else td.find("p").get("title","")).replace("\n\n","\n").strip() ) for td in item.find_all("td")])
+                else:
+                    self.tableModel.appendRow([QStandardItem( str( td.text if td.find("p") == None else td.find("p").text).replace(" ","").strip() ) for td in item.find_all("td")])
+            self.ui_classSchedule.classScheduleTable.setModel(self.tableModel)
+
+            self.setMessageShow("解析课程表成功!",color=Qt.green)
+            print("解析课程表成功!\n")
+        except Exception as e:
+            print("解析课程表异常:" + str(e) + "\n")
+            self.setMessageShow("解析课程表异常:" + str(e),color=Qt.red)
     
+    def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
+        paletter = QPalette()
+        paletter.setColor(QPalette.WindowText, color)
+        self.ui_classSchedule.messageShow.setPalette(paletter)
+        self.ui_classSchedule.messageShow.setText(message)
+            
 #登录线程
 class LoginThread(QThread): 
     global session, userId, userpwd

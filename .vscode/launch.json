@@ -13,7 +13,7 @@
             "preLaunchTask": "ui文件->py",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/mian.py",
+            "program": "${workspaceFolder}/main.py",
             "console": "externalTerminal"
         }
     ]
