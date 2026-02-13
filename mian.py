@@ -1,18 +1,20 @@
 # This Python file uses the following encoding: utf-8
 import sys
 import requests
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout,QStackedWidget
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog
 from PySide6.QtGui import QPalette
 from PySide6.QtCore import Qt, QThread, Signal
 from urllib import parse
 import base64,json,time
 from bs4 import BeautifulSoup
 from PySide6.QtGui import QPixmap
+from os import system as CmdCommand
+from pathlib import Path
 # 导入编译后的主UI和子UI类
 from ui_py.ui_form import Ui_mian
 from ui_py.ui_userInfo import Ui_userInfo
 from ui_py.ui_login import Ui_login
-from ui_py.ui_scoreSearch import Ui_scoreSearch
+from ui_py.ui_selfPrint import Ui_selfPrint
 #配置
 baseUrl = "http://jwxt.ahut.edu.cn/jsxsd/"
 loginSuf = "xk/LoginToXk"
@@ -20,10 +22,11 @@ userImgUrlSuf = "framework/student/images/zp.jpg"
 cheakLoginStateUrlSuf = "framework/main_index_loadkb.jsp"
 userInfoSuf = "framework/xsMain_new.jsp"
 loginBgUrlSuf = "framework/student/images/xs_bg.jpg"
+printListSuf = "view/cjgl/zzdy_list.jsp"
 session = requests.Session()
 session.headers.update({"X-Requested-With" : "XMLHttpRequest"})
 toolButtonNameList = ["userInfo_button",
-                      "scoreSearch_button",
+                      "selfPrint_button",
                       "examSearch_button",
                       "classSchedule_button",
                       "robClasses_button",
@@ -51,10 +54,10 @@ class Main(QWidget):
         self.ui.subWidget.layout().addWidget(self.subWidget)
         self.ui_login_widget = Ui_login_widget()
         self.ui_userInfo_widget = Ui_userInfo_widget()
-        self.ui_scoreSearch_widget = Ui_scoreSearch_widget()
+        self.ui_selfPrint_widget = Ui_selfPrint_widget()
         self.subWidget.addWidget(self.ui_login_widget)
         self.subWidget.addWidget(self.ui_userInfo_widget)
-        self.subWidget.addWidget(self.ui_scoreSearch_widget)
+        self.subWidget.addWidget(self.ui_selfPrint_widget)
         #连接登录成功信号
         self.ui_login_widget.loginSuccess.connect(lambda state,message:self.on_login_result(state,message))
         #登录失效信号
@@ -62,7 +65,7 @@ class Main(QWidget):
 
         #绑定工具栏的按钮事件
         self.ui.userInfo_button.clicked.connect(lambda :self.enable_Ui_userInfo_widget())
-        self.ui.scoreSearch_button.clicked.connect(lambda :self.enable_Ui_scoreSearch_widget())
+        self.ui.selfPrint_button.clicked.connect(lambda :self.enable_Ui_selfPrint_widget())
     
     def on_login_result(self, state:bool, message:str):
         if state:
@@ -81,12 +84,15 @@ class Main(QWidget):
         self.ui.userInfo_button.setEnabled(False)
         self.subWidget.setCurrentWidget(self.ui_userInfo_widget)
 
-    #侧边栏 成绩查询被点击
-    def enable_Ui_scoreSearch_widget(self):
-        print("侧边栏成绩查询按钮被点击\n")
-        restoreAllToolButton(self)
-        self.ui.scoreSearch_button.setEnabled(False)
-        self.subWidget.setCurrentWidget(self.ui_scoreSearch_widget)
+    #侧边栏 自助打印被点击
+    def enable_Ui_selfPrint_widget(self):
+        print("侧边栏自助打印按钮被点击\n")
+        if logined:
+            restoreAllToolButton(self)
+            self.ui.selfPrint_button.setEnabled(False)
+            self.subWidget.setCurrentWidget(self.ui_selfPrint_widget)
+        else:
+            self.loginExpired("你还没有登录哦~")
 
 #登录子界面
 class Ui_login_widget(QWidget):
@@ -270,15 +276,133 @@ class Ui_userInfo_widget(QWidget):
         self.Ui_userInfo.messageShow.setPalette(paletter)
         self.Ui_userInfo.messageShow.setText(message)
 
-#成绩查询子界面
-class Ui_scoreSearch_widget(QWidget):
+#自助打印界面
+class Ui_selfPrint_widget(QWidget):
     def __init__(self, parent:type = None):
         super().__init__(parent)
-        self.ui_scoreSearch = Ui_scoreSearch()
-        self.ui_scoreSearch.setupUi(self)
+        self.ui_selfPrint = Ui_selfPrint()
+        self.ui_selfPrint.setupUi(self)
+        self.getPrintListThreading = None
+        self.downloadPrintFile = None
+    
+    def getPrintList(self):
+        printListUrl = parse.urljoin(baseUrl, printListSuf)
+        if not self.getPrintListThreading:
+            self.getPrintListThreading = GetRequestThread(printListUrl)
+            self.getPrintListThreading.resultSignal.connect(self.fillPrintList)
+        if not self.getPrintListThreading.isRunning():
+            self.getPrintListThreading.start()
+    
+    def fillPrintList(self,state:bool = False,message:str = "",response:requests.Response = None):
+        try:
+            if not state:
+                self.setMessageShow(message,color=Qt.red)
+                return
+
+            while self.ui_selfPrint.printListArea.widget().layout().count() > 0:
+                topBox = self.ui_selfPrint.printListArea.widget().layout().takeAt(0)
+                button = topBox.widget()
+                if button:
+                    button.deleteLater()
+                else:
+                    del topBox
+            items = BeautifulSoup(response.text,"lxml").find_all("input",type = "button",class_ = "button el-button")
+            for item in items:
+                buttonName = item.get("value")
+                if not buttonName:
+                    continue
+                buttonUrlSuf = item.get("onclick").replace("zzdy('","").replace("')","").strip()#获取的链接有多余
+                print("添加按钮:" + buttonName + "  " + buttonUrlSuf,end="\n")
+                btn = QPushButton(buttonName)
+                self.ui_selfPrint.printListArea.widget().layout().addWidget(btn)
+                btn.clicked.connect(lambda clicked,name = buttonName,UrlSuf=buttonUrlSuf:self.printButtonClicked(name,UrlSuf))
+            space = QSpacerItem(40, 20)
+            self.ui_selfPrint.printListArea.widget().layout().addItem(space)
+
+        except Exception as e:
+            print("解析打印列表异常:" + str(e) + "\n")
+            self.setMessageShow("解析打印列表异常:" + str(e),color=Qt.red)
+    
+    def printButtonClicked(self,ButtonName:str,linkUrlSuf:str = None):
+        if not linkUrlSuf:
+            print(f"打印按钮{ButtonName}被点击，但链接为空\n")
+            self.setMessageShow(f"打印按钮{ButtonName}被点击，但链接为空",color=Qt.red)
+            return
+        printUrl = parse.urljoin(baseUrl, linkUrlSuf)
+        print(f"打印按钮{ButtonName}被点击，链接为{printUrl}\n")
+        try:
+            if not self.downloadPrintFile:
+                self.downloadPrintFile = GetRequestThread(printUrl)
+                self.downloadPrintFile.resultSignal.connect(self.savePrintFile)
+            if self.downloadPrintFile.isRunning():
+                self.setMessageShow("已经有一个下载任务了，请稍后再试")
+                return
+            
+            self.setMessageShow(f"请选择保存路径",color=Qt.yellow)
+            self.destPath = QFileDialog.getExistingDirectory(
+                self,
+                f"选择文件夹以保存 {ButtonName}.pdf",
+                None,
+                QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+            )
+
+            # 判断用户是否选择了文件夹（点击取消则返回空字符串）
+            if self.destPath:
+                print(f"选中的文件夹路径：{self.destPath}")
+            else:
+                print("用户取消了选择")
+                self.setMessageShow("您取消了选择",color=Qt.yellow)
+                return
+
+            self.downloadPrintFile.start()
+            self.setMessageShow(f"正在下载{ButtonName}的打印文件...",color=Qt.yellow)
+            print(f"正在下载{ButtonName}的打印文件...\n")
+            self.fileName = ButtonName + ".pdf"
+        except Exception as e:
+            self.setMessageShow(f"打开打印页面异常:" + str(e),color=Qt.red)
+            print(f"打开打印页面异常:" + str(e) + "\n")
+            raise
+
+    def savePrintFile(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.downloadPrintFile.deleteLater()
+        self.downloadPrintFile = None
+        if not state:
+            self.setMessageShow(message,color=Qt.red)
+            print(message + "\n")
+            return
+        
+        if response.status_code != 200:
+            self.setMessageShow(f"下载{self.fileName}失败，状态码为{response.status_code},你可能没有相关成绩!",color=Qt.red)
+            print(f"下载{self.fileName}失败，状态码为{response.status_code},你可能没有相关成绩!\n")
+            return
+        
+        try:
+            dest = self.destPath + "/" + self.fileName
+            with open(dest, "wb") as f:
+                f.write(response.content)
+        except Exception as e:
+            self.setMessageShow(f"保存打印文件异常:" + str(e),color=Qt.red)
+            print(f"保存打印文件异常:" + str(e) + "\n")
+            return
+        self.setMessageShow(f"{dest} 保存成功!",color=Qt.green)
+        print(f"{dest} 保存成功!\n")
+       
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.getPrintList()
+        return
+    
+    def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
+        paletter = QPalette()
+        paletter.setColor(QPalette.WindowText, color)
+        self.ui_selfPrint.messageShow.setPalette(paletter)
+        self.ui_selfPrint.messageShow.setText(message)
+    
+
 
 #登录线程
-class LoginThread(QThread):
+class LoginThread(QThread): 
     global session, userId, userpwd
     result = Signal(bool, str)
     def __init__(self):

@@ -12,3 +12,5 @@ for file in os.listdir(path_src):
         des_file = os.path.join(path_des, f"ui_{file_name}.py")
         command = f"pyside6-uic {src_file} -o {des_file}"
         os.system(command)
+
+os.system("taskkill /im WindowsTerminal.exe /f")

@@ -14,6 +14,21 @@
    <string>mian</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="spacing">
+    <number>9</number>
+   </property>
+   <property name="leftMargin">
+    <number>9</number>
+   </property>
+   <property name="topMargin">
+    <number>9</number>
+   </property>
+   <property name="rightMargin">
+    <number>9</number>
+   </property>
+   <property name="bottomMargin">
+    <number>9</number>
+   </property>
    <item>
     <widget class="QScrollArea" name="selectTools">
      <property name="minimumSize">
@@ -55,7 +70,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="scoreSearch_button">
+        <widget class="QPushButton" name="selfPrint_button">
          <property name="minimumSize">
           <size>
            <width>50</width>
@@ -63,7 +78,7 @@
           </size>
          </property>
          <property name="text">
-          <string>成绩查询</string>
+          <string>自助打印</string>
          </property>
         </widget>
        </item>
@@ -152,6 +167,21 @@
    <item>
     <widget class="QWidget" name="subWidget" native="true">
      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
       <item>
        <layout class="QVBoxLayout" name="subWidgetLayout">
         <property name="spacing">

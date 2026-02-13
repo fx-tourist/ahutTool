@@ -25,7 +25,9 @@ class Ui_mian(object):
             mian.setObjectName(u"mian")
         mian.resize(638, 494)
         self.horizontalLayout = QHBoxLayout(mian)
+        self.horizontalLayout.setSpacing(9)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalLayout.setContentsMargins(9, 9, 9, 9)
         self.selectTools = QScrollArea(mian)
         self.selectTools.setObjectName(u"selectTools")
         self.selectTools.setMinimumSize(QSize(150, 0))
@@ -42,11 +44,11 @@ class Ui_mian(object):
 
         self.verticalLayout.addWidget(self.userInfo_button)
 
-        self.scoreSearch_button = QPushButton(self.scrollAreaWidgetContents)
-        self.scoreSearch_button.setObjectName(u"scoreSearch_button")
-        self.scoreSearch_button.setMinimumSize(QSize(50, 50))
+        self.selfPrint_button = QPushButton(self.scrollAreaWidgetContents)
+        self.selfPrint_button.setObjectName(u"selfPrint_button")
+        self.selfPrint_button.setMinimumSize(QSize(50, 50))
 
-        self.verticalLayout.addWidget(self.scoreSearch_button)
+        self.verticalLayout.addWidget(self.selfPrint_button)
 
         self.examSearch_button = QPushButton(self.scrollAreaWidgetContents)
         self.examSearch_button.setObjectName(u"examSearch_button")
@@ -89,7 +91,9 @@ class Ui_mian(object):
         self.subWidget = QWidget(mian)
         self.subWidget.setObjectName(u"subWidget")
         self.verticalLayout_3 = QVBoxLayout(self.subWidget)
+        self.verticalLayout_3.setSpacing(0)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.subWidgetLayout = QVBoxLayout()
         self.subWidgetLayout.setSpacing(0)
         self.subWidgetLayout.setObjectName(u"subWidgetLayout")
@@ -109,7 +113,7 @@ class Ui_mian(object):
     def retranslateUi(self, mian):
         mian.setWindowTitle(QCoreApplication.translate("mian", u"mian", None))
         self.userInfo_button.setText(QCoreApplication.translate("mian", u"\u8d26\u53f7", None))
-        self.scoreSearch_button.setText(QCoreApplication.translate("mian", u"\u6210\u7ee9\u67e5\u8be2", None))
+        self.selfPrint_button.setText(QCoreApplication.translate("mian", u"\u81ea\u52a9\u6253\u5370", None))
         self.examSearch_button.setText(QCoreApplication.translate("mian", u"\u8003\u8bd5\u67e5\u8be2", None))
         self.classSchedule_button.setText(QCoreApplication.translate("mian", u"\u8bfe\u7a0b\u8868", None))
         self.robClasses_button.setText(QCoreApplication.translate("mian", u"\u62a2\u8bfe\u52a9\u624b", None))

@@ -116,11 +116,6 @@ class Ui_userInfo(object):
 
         self.gridLayout.addWidget(self.messageShow, 7, 1, 1, 2)
 
-        self.loginOut_button = QPushButton(userInfo)
-        self.loginOut_button.setObjectName(u"loginOut_button")
-
-        self.gridLayout.addWidget(self.loginOut_button, 10, 2, 1, 1)
-
         self.major = QLabel(userInfo)
         self.major.setObjectName(u"major")
         sizePolicy.setHeightForWidth(self.major.sizePolicy().hasHeightForWidth())
@@ -148,6 +143,11 @@ class Ui_userInfo(object):
 
         self.gridLayout.addWidget(self.userAvatar, 0, 1, 2, 2)
 
+        self.loginOut_button = QPushButton(userInfo)
+        self.loginOut_button.setObjectName(u"loginOut_button")
+
+        self.gridLayout.addWidget(self.loginOut_button, 10, 1, 1, 2)
+
 
         self.retranslateUi(userInfo)
 
@@ -165,9 +165,9 @@ class Ui_userInfo(object):
         self.yuanxiTxt.setText(QCoreApplication.translate("userInfo", u"\u9662\u7cfb:", None))
         self.userName.setText(QCoreApplication.translate("userInfo", u"userName", None))
         self.messageShow.setText("")
-        self.loginOut_button.setText(QCoreApplication.translate("userInfo", u"\u9000\u51fa\u767b\u5f55", None))
         self.major.setText(QCoreApplication.translate("userInfo", u"\u4e13\u4e1a:", None))
         self.userId.setText(QCoreApplication.translate("userInfo", u"userId", None))
         self.userAvatar.setText("")
+        self.loginOut_button.setText(QCoreApplication.translate("userInfo", u"\u9000\u51fa\u767b\u5f55", None))
     # retranslateUi
 

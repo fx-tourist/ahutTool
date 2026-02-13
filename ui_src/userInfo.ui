@@ -203,13 +203,6 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="2">
-    <widget class="QPushButton" name="loginOut_button">
-     <property name="text">
-      <string>退出登录</string>
-     </property>
-    </widget>
-   </item>
    <item row="5" column="1">
     <widget class="QLabel" name="major">
      <property name="sizePolicy">
@@ -258,6 +251,13 @@
      </property>
      <property name="text">
       <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="1" colspan="2">
+    <widget class="QPushButton" name="loginOut_button">
+     <property name="text">
+      <string>退出登录</string>
      </property>
     </widget>
    </item>
