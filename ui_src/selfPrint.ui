@@ -63,7 +63,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <property name="spacing">
-        <number>0</number>
+        <number>9</number>
        </property>
        <property name="leftMargin">
         <number>0</number>
@@ -80,7 +80,7 @@
        <item>
         <layout class="QVBoxLayout" name="selfPrintListLayout">
          <property name="spacing">
-          <number>0</number>
+          <number>9</number>
          </property>
          <item>
           <spacer name="verticalSpacer">

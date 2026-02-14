@@ -50,6 +50,131 @@ userAvatar = None
 semester = ""
 currDate = QDate.currentDate().toString("yyyy-MM-dd")
 
+app = QApplication(sys.argv)
+app.setStyleSheet("""
+* {
+    font-size: 16px;
+}
+
+QMainWindow, QWidget {
+    background-color: #1f1f1f;
+}
+
+QLabel {
+    background: transparent;
+}
+
+QLineEdit,
+QTextEdit,
+QSpinBox,
+QDoubleSpinBox,
+QComboBox {
+    background-color: #2b2b2b;
+    border: 1px solid #3e3e3e;
+    border-radius: 6px;
+}
+
+QLineEdit:focus, QTextEdit:focus {
+    border: 1px solid #0078d4;
+}
+
+QComboBox::drop-down { border: none; }
+QComboBox::down-arrow {
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #cccccc;
+    margin-right: 6px;
+}
+
+/* 按钮 */
+QPushButton {
+    background-color: #3a3a3a;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+}
+
+QPushButton:hover {
+    background-color: #464646;
+}
+
+QPushButton:pressed {
+    background-color: #323232;
+}
+
+QGroupBox {
+    border: 1px solid #3e3e3e;
+    border-radius: 8px;
+}
+
+/* ====================== 最简 CheckBox，只改颜色，保留系统对勾 ====================== */
+QCheckBox {
+    background: transparent;
+    spacing: 6px;
+}
+
+QCheckBox::indicator {
+    background-color: #2b2b2b;
+    border: 1px solid #3e3e3e;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #0078d4;
+    border-color: #0078d4;
+}
+
+/* 单选框 */
+QRadioButton {
+    background: transparent;
+    spacing: 6px;
+}
+
+QRadioButton::indicator {
+    background-color: #2b2b2b;
+    border: 1px solid #3e3e3e;
+}
+
+QRadioButton::indicator:checked {
+    background-color: #0078d4;
+    border-color: #0078d4;
+}
+
+/* TableView */
+QTableView, QTableWidget {
+    background-color: #2b2b2b;
+    border: 1px solid #3e3e3e;
+    gridline-color: #3e3e3e;
+}
+
+QTableView::item:selected, QTableWidget::item:selected {
+    background-color: #0078d4;
+}
+
+QHeaderView::section {
+    background-color: #3a3a3a;
+    border: 1px solid #3e3e3e;
+}
+
+QScrollBar:vertical {
+    background-color: #2b2b2b;
+    width: 12px;
+}
+QScrollBar::handle:vertical {
+    background-color: #444;
+    border-radius: 6px;
+}
+
+QScrollBar:horizontal {
+    background-color: #2b2b2b;
+    height: 12px;
+}
+QScrollBar::handle:horizontal {
+    background-color: #444;
+    border-radius: 6px;
+}
+""")
+
+
 
 #主界面
 class Main(QWidget):
@@ -173,13 +298,13 @@ class Ui_login_widget(QWidget):
             self.setMessageShow("请勾选同意协议",color=Qt.red)
             return
 
-        self.setMessageShow("正在登录...",color=Qt.darkYellow)
+        self.setMessageShow("正在登录...",color=Qt.yellow)
         self.ui_login.login_button.setEnabled(False)
         login(self, self.login_returnFunction)
         
     def login_returnFunction(self,state:bool,message:str):
         if state:
-            self.setMessageShow(message,color=Qt.darkGreen)
+            self.setMessageShow(message,color=Qt.green)
             self.loginSuccess.emit(state,message)
         else:
             self.setMessageShow(message,color=Qt.red)
@@ -240,7 +365,7 @@ class Ui_userInfo_widget(QWidget):
         #获取当前学期
         if semester == "":
             print("正在获取当前学期...\n")
-            self.setMessageShow("正在获取当前学期...",color=Qt.darkYellow)
+            self.setMessageShow("正在获取当前学期...",color=Qt.yellow)
             if not self.getsemesterThread:
                 self.getsemesterThread = GetRequestThread(parse.urljoin(baseUrl, semesterUrlSuf))
                 self.getsemesterThread.resultSignal.connect(self.fillSemester)
@@ -261,7 +386,7 @@ class Ui_userInfo_widget(QWidget):
             print("获取当前学期失败\n")
             return
         semester = semester.get("value","")
-        self.setMessageShow("当前学期:" + semester,color=Qt.darkGreen)
+        self.setMessageShow("当前学期:" + semester,color=Qt.green)
         print("当前学期:" + semester + "\n")
 
     def loginOut(self):
@@ -275,7 +400,7 @@ class Ui_userInfo_widget(QWidget):
     def getUserInfo(self):
         #获取用户信息
         print("正在获取用户信息...\n")
-        self.setMessageShow("正在获取用户信息...",color=Qt.darkYellow)
+        self.setMessageShow("正在获取用户信息...",color=Qt.yellow)
         userInfoUrl = parse.urljoin(baseUrl, userInfoSuf)
         try:
             if not self.getUserInfoThread:
@@ -289,7 +414,7 @@ class Ui_userInfo_widget(QWidget):
         
         #获取用户头像
         print("正在获取用户头像...\n")
-        self.setMessageShow("正在获取用户头像...",color=Qt.darkYellow)
+        self.setMessageShow("正在获取用户头像...",color=Qt.yellow)
         userAvatarUrl = parse.urljoin(baseUrl, userImgUrlSuf)
         try:
             if not self.getuserAvatarThread:
@@ -312,7 +437,7 @@ class Ui_userInfo_widget(QWidget):
         pixmap = QPixmap()
         pixmap.loadFromData(userAvatar)
         self.Ui_userInfo.userAvatar.setPixmap(pixmap)
-        self.setMessageShow("用户头像获取成功!",color=Qt.darkGreen)
+        self.setMessageShow("用户头像获取成功!",color=Qt.green)
         print("用户头像获取成功!\n")
 
     #回调:解析用户信息并填入界面
@@ -322,7 +447,7 @@ class Ui_userInfo_widget(QWidget):
             self.setMessageShow(message,color=Qt.red)
             print(message + "\n")
             return
-        self.setMessageShow("填入用户信息中...",color=Qt.darkGreen)
+        self.setMessageShow("填入用户信息中...",color=Qt.green)
         global userName, userDepartment, userMajor, userClass, userId
         soup = BeautifulSoup(response.text, "lxml")
         try:
@@ -337,7 +462,7 @@ class Ui_userInfo_widget(QWidget):
             self.Ui_userInfo.userDepartment.setText(userDepartment)
             self.Ui_userInfo.userMajor.setText(userMajor)
             self.Ui_userInfo.userClass.setText(userClass)
-            self.setMessageShow("用户信息获取成功!",color=Qt.darkGreen)
+            self.setMessageShow("用户信息获取成功!",color=Qt.green)
             print("用户信息获取成功!\n")
         except Exception as e:
             self.setMessageShow("解析用户信息异常:" + str(e),color=Qt.red)
@@ -411,7 +536,7 @@ class Ui_selfPrint_widget(QWidget):
                 self.setMessageShow("已经有一个下载任务了，请稍后再试")
                 return
             
-            self.setMessageShow(f"请选择保存路径",color=Qt.darkYellow)
+            self.setMessageShow(f"请选择保存路径",color=Qt.yellow)
             self.destPath = QFileDialog.getExistingDirectory(
                 self,
                 f"选择文件夹以保存 {ButtonName}.pdf",
@@ -424,11 +549,11 @@ class Ui_selfPrint_widget(QWidget):
                 print(f"选中的文件夹路径：{self.destPath}")
             else:
                 print("用户取消了选择")
-                self.setMessageShow("您取消了选择",color=Qt.darkYellow)
+                self.setMessageShow("您取消了选择",color=Qt.yellow)
                 return
 
             self.downloadPrintFile.start()
-            self.setMessageShow(f"正在下载{ButtonName}的打印文件...",color=Qt.darkYellow)
+            self.setMessageShow(f"正在下载{ButtonName}的打印文件...",color=Qt.yellow)
             print(f"正在下载{ButtonName}的打印文件...\n")
             self.fileName = ButtonName + ".pdf"
         except Exception as e:
@@ -457,7 +582,7 @@ class Ui_selfPrint_widget(QWidget):
             self.setMessageShow(f"保存打印文件异常:" + str(e),color=Qt.red)
             print(f"保存打印文件异常:" + str(e) + "\n")
             return
-        self.setMessageShow(f"{dest} 保存成功!",color=Qt.darkGreen)
+        self.setMessageShow(f"{dest} 保存成功!",color=Qt.green)
         print(f"{dest} 保存成功!\n")
        
     def showEvent(self, event):
@@ -518,14 +643,16 @@ class Ui_examSearch_widget(QWidget):
 
             if len(examList[1].find_all("td")) == 1:
                 print("暂无集中考试\n")
-                self.setMessageShow1("暂无集中考试↑",color=Qt.darkGreen)
+                self.setMessageShow1("暂无集中考试↑",color=Qt.green)
                 return
             else:
-                self.setMessageShow1("集中考试↑",color=Qt.darkYellow)
+                self.setMessageShow1("集中考试↑",color=Qt.yellow)
 
             for items in examList[1:]:
                 self.DataModel1.appendRow([QStandardItem(str(item.text.strip())) for item in items.find_all("td")])
             self.ui_examSearch.examTable1.setModel(self.DataModel1)
+            self.ui_examSearch.examTable1.resizeColumnsToContents()
+            self.ui_examSearch.examTable1.resizeRowsToContents()
         except Exception as e:
             print("解析考试列表1异常:" + str(e) + "\n")
             self.setMessageShow("解析考试列表异常1:" + str(e),color=Qt.red)
@@ -543,7 +670,7 @@ class Ui_examSearch_widget(QWidget):
                 print("获取考试列表2失败\n")
                 return
             else:
-                self.setMessageShow("分散考试↑",color=Qt.darkYellow)
+                self.setMessageShow("分散考试↑",color=Qt.yellow)
 
             examList = examList.find_all("tr")
             self.colCnt = len(examList[0].find_all("th"))
@@ -551,13 +678,15 @@ class Ui_examSearch_widget(QWidget):
             self.DataModel2.setHorizontalHeaderLabels([str(item.text.strip()) for item in examList[0].find_all("th")])
 
             if len(examList[1].find_all("td")) == 1:
-                self.setMessageShow("暂无分散考试↑",color=Qt.darkGreen)
+                self.setMessageShow("暂无分散考试↑",color=Qt.green)
                 print("暂无分散考试\n")
                 return
 
             for items in examList[1:]:
                 self.DataModel2.appendRow([QStandardItem(str(item.text.strip())) for item in items.find_all("td")])
             self.ui_examSearch.examTable2.setModel(self.DataModel2)
+            self.ui_examSearch.examTable2.resizeColumnsToContents()
+            self.ui_examSearch.examTable2.resizeRowsToContents()
         except Exception as e:
             print("解析考试列表2异常:" + str(e) + "\n")
             self.setMessageShow("解析考试列表异常2:" + str(e),color=Qt.red)
@@ -609,7 +738,7 @@ class Ui_classSchedule_widget(QWidget):
         self.getClassScheduleThreading = PostRequestThread(parse.urljoin(baseUrl, classScheduleUrlSuf),data = {"rq" : selectDate})
         self.getClassScheduleThreading.resultSignal.connect(self.fillClassSchedule)
         self.getClassScheduleThreading.start()
-        self.setMessageShow("正在查询课程表..." + selectDate,color=Qt.darkYellow)
+        self.setMessageShow("正在查询课程表..." + selectDate,color=Qt.yellow)
         print("正在查询课程表...\n")
         
     def fillClassSchedule(self,state:bool = False,message:str = "",response:requests.Response = None):
@@ -618,8 +747,7 @@ class Ui_classSchedule_widget(QWidget):
                 self.setMessageShow(message,color=Qt.red)
                 print(message + "\n")
                 return
-            
-            soup = BeautifulSoup(response.text.replace("<br>","\n").replace("</br>","\n").replace("<br/>","\n"), "lxml")
+            soup = BeautifulSoup(response.text.replace("\r","").replace("\n","").replace("\t","").replace("<br>","\n").replace("</br>","\n").replace("<br/>","\n"), "lxml")
             items = soup.find_all("tr")
             colCnt = len(items[0].find_all("th"))
             self.tableModel.setColumnCount(colCnt)
@@ -627,20 +755,21 @@ class Ui_classSchedule_widget(QWidget):
             self.tableModel.setHorizontalHeaderLabels([str(item.text.strip()) for item in items[0].find_all("th")])
 
             if len(items) == 1:
-                self.setMessageShow("暂无课程信息",color=Qt.darkGreen)
+                self.setMessageShow("暂无课程信息",color=Qt.green)
                 print("暂无课程信息\n")
                 return
 
             showDetail = self.ui_classSchedule.showDetail.isChecked()
-
+        
             for item in items[1:]:
                 if showDetail:
-                    self.tableModel.appendRow([QStandardItem( str( td.text if td.find("p") == None else td.find("p").get("title","")).replace("\n\n","\n").strip() ) for td in item.find_all("td")])
+                    self.tableModel.appendRow([QStandardItem( str( td.text if td.find("p") == None else td.find("p").get("title","")).strip() ) for td in item.find_all("td")])
                 else:
-                    self.tableModel.appendRow([QStandardItem( str( td.text if td.find("p") == None else td.find("p").text).replace(" ","").strip() ) for td in item.find_all("td")])
+                    self.tableModel.appendRow([QStandardItem( str( td.text if td.find("p") == None else td.find("p").text).strip() ) for td in item.find_all("td")])
             self.ui_classSchedule.classScheduleTable.setModel(self.tableModel)
-
-            self.setMessageShow("解析课程表成功!",color=Qt.darkGreen)
+            self.ui_classSchedule.classScheduleTable.resizeColumnsToContents()
+            self.ui_classSchedule.classScheduleTable.resizeRowsToContents()
+            self.setMessageShow("解析课程表成功!",color=Qt.green)
             print("解析课程表成功!\n")
         except Exception as e:
             print("解析课程表异常:" + str(e) + "\n")
@@ -766,7 +895,6 @@ def restoreAllToolButton(mainWindow):
         mainWindow.ui.__getattribute__(btnName).setEnabled(True)
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
     widget = Main()
     widget.show()
     sys.exit(app.exec())

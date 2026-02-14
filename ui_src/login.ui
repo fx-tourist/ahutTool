@@ -32,6 +32,12 @@
    </item>
    <item row="3" column="3">
     <widget class="QCheckBox" name="used_accept">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="text">
       <string>同意将数据上传到服务器</string>
      </property>
@@ -52,14 +58,20 @@
    </item>
    <item row="2" column="3">
     <widget class="QLineEdit" name="login_pwdInput">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="minimumSize">
       <size>
        <width>200</width>
-       <height>0</height>
+       <height>30</height>
       </size>
      </property>
      <property name="text">
-      <string/>
+      <string>20060612</string>
      </property>
      <property name="maxLength">
       <number>15</number>
@@ -75,7 +87,7 @@
    <item row="7" column="3">
     <widget class="QLabel" name="messageShow">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
@@ -102,6 +114,18 @@
    </item>
    <item row="6" column="3">
     <widget class="QPushButton" name="login_button">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>50</width>
+       <height>30</height>
+      </size>
+     </property>
      <property name="text">
       <string>登录</string>
      </property>
@@ -109,14 +133,20 @@
    </item>
    <item row="1" column="3">
     <widget class="QLineEdit" name="login_idInput">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="minimumSize">
       <size>
        <width>200</width>
-       <height>0</height>
+       <height>30</height>
       </size>
      </property>
      <property name="text">
-      <string/>
+      <string>249074144</string>
      </property>
      <property name="maxLength">
       <number>15</number>
