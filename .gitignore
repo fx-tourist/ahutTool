@@ -1,99 +1,71 @@
-# This file is used to ignore files which are generated
-# ----------------------------------------------------------------------------
-
-# 基础通用忽略
+# ==================== 基础通用忽略 ====================
+# 系统临时文件
 *~
 *.autosave
+Thumbs.db
+.DS_Store
 .#*
 *.*#
 core
 !core/
 tags
-.DS_Store
 .directory
-Thumbs.db
 
-# Qt专属生成文件（保留原始.ui/.qrc，忽略编译产物）
-*.a
-*.core
-*.moc
-*.o
-*.obj
-*.orig
-*.rej
-*.so
-*.so.*
-*_pch.h.cpp
-*_resource.rc
-*.qm
+# ==================== Python 相关 ====================
+# 字节码缓存（含ui_py/__pycache__、img_py/__pycache__）
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+
+# ==================== PyInstaller 打包产物 ====================
+# 打包生成的spec文件
+*.spec
+# 打包临时构建目录（build/下所有内容）
+build/
+# 打包输出目录（若有dist/也忽略）
+dist/
+# 打包临时工作目录（你的pyinstall.bat中指定的build_temp）
+build_temp/
+# 最终生成的exe文件
+*.exe
+# 打包生成的日志/警告文件
+warn-*.txt
+xref-*.html
+# 打包生成的临时zip/ico/pyz文件
+*.pkg
+*.zip
+*.pyz
+*.toc
+generated-*.ico
+
+# ==================== Qt 相关 ====================
+# Qt Creator 配置文件（.qtcreator/目录）
+.qtcreator/
+# Qt 自动生成的编译文件
 moc_*.cpp
-ui_*.h          # 忽略Qt Designer编译的.h（你的项目用ui_py/*.py，无需.h）
+ui_*.h
 qrc_*.cpp
-.prl
-.moc/
-.obj/
-.pch/
-.rcc/
-.uic/
+# 图片编译后的产物目录（img_py/）
+img_py/
+ui_py/
 
-# Qt Creator生成文件
-*.pro.user*
-*.qbs.user*
-CMakeLists.txt.user*
-/.qmake.cache
-/.qmake.stash
-.qtcreator/     # 忽略Qt Creator配置目录
+# ==================== VSCode 配置（精细化忽略） ====================
+# 忽略个人化设置，保留调试配置（launch.json/tasks.json）
+.vscode/
 
-# 编辑器临时文件
-*.flc           # xemacs
-.*.swp          # Vim
-*.debug
-Makefile*
-
-# Visual Studio生成文件
+# ==================== 其他冗余文件 ====================
+# 运行日志
+*.log
+# 临时文件
+*.tmp
+*.bak
+# MinGW/VS 编译产物
+*.Debug
+*.Release
 *.ib_pdb_index
 *.idb
 *.ilk
 *.pdb
-*.sln
-*.suo
-*.vcproj
-*vcproj.*.*.user
-*.ncb
-*.sdf
-*.opensdf
-*.vcxproj
-*vcxproj.*
-
-# MinGW生成文件
-*.Debug
-*.Release
-
-# Python相关（核心适配你的项目）
-*.pyc                       # 忽略Python字节码
-__pycache__/                # 忽略Python缓存目录（关键：覆盖ui_py/__pycache__）
-# 保留：.py文件、requirements.txt、pyproject.toml（均为开源核心）
-
-# 打包产物（核心：适配PyInstaller）
-*.exe                       # 忽略Ahut Tool 2.0.exe
-*.dll                       # 忽略动态库
-*.spec                      # 忽略打包配置.spec（可选：若想公开spec可注释此行）
-/build*/                    # 忽略PyInstaller的build/目录
-dist/                       # 忽略PyInstaller的dist/目录
-build_temp/                 # 忽略你打包脚本中的临时目录
-
-# VSCode配置（精细化：保留launch.json/tasks.json，忽略个人设置）
-.vscode/settings.json
-.vscode/extensions.json
-.vscode/*.log
-# 保留：.vscode/launch.json、.vscode/tasks.json（若想公开可忽略此行）
-
-# 冗余/临时文件
-*.log                       # 忽略运行日志（避免敏感信息提交）
-*.tmp
-*.bak
-
-# 排除误忽略的必要文件（关键！）
-!img_src/img.qrc            # 取消忽略Qt资源文件.qrc
-!ui_src/*.ui                # 确保.ui原始文件不被忽略
-!ui_py/*.py                 # 确保.ui编译后的.py文件不被忽略
