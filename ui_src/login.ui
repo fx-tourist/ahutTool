@@ -38,6 +38,9 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="layoutDirection">
+      <enum>Qt::LayoutDirection::LeftToRight</enum>
+     </property>
      <property name="text">
       <string>同意将数据上传到服务器</string>
      </property>
