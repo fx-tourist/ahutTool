@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>mian</class>
- <widget class="QWidget" name="mian">
+ <class>main</class>
+ <widget class="QWidget" name="main">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -118,19 +118,6 @@
          </property>
          <property name="text">
           <string>抢课助手</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="settings_button">
-         <property name="minimumSize">
-          <size>
-           <width>50</width>
-           <height>50</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>设置</string>
          </property>
         </widget>
        </item>

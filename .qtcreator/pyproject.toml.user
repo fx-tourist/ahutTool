@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 18.0.2, 2026-02-13T14:09:03. -->
+<!-- Written by QtCreator 18.0.2, 2026-02-14T12:40:36. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -157,10 +157,8 @@
      <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">D:/Desktop/program learn/uiDesigner/ahutTool/mian.py</value>
      <value type="bool" key="ProjectExplorer.RunConfiguration.Customized">true</value>
      <value type="QString" key="ProjectExplorer.RunConfiguration.UniqueId"></value>
-     <value type="QString" key="PythonEditor.RunConfiguation.Script">D:\Desktop\program learn\uiDesigner\ahutTool\mian.py</value>
      <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
      <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
-     <value type="QString" key="RunConfiguration.WorkingDirectory.default">D:/Desktop/program learn/uiDesigner/ahutTool</value>
     </valuemap>
     <value type="qlonglong" key="ProjectExplorer.Target.RunConfigurationCount">1</value>
     <value type="QString" key="python">C:/Users/梵星/AppData/Local/Programs/Python/Python314/python.exe</value>
@@ -194,10 +192,8 @@
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">D:/Desktop/program learn/uiDesigner/ahutTool/mian.py</value>
     <value type="bool" key="ProjectExplorer.RunConfiguration.Customized">true</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.UniqueId"></value>
-    <value type="QString" key="PythonEditor.RunConfiguation.Script">D:\Desktop\program learn\uiDesigner\ahutTool\mian.py</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
-    <value type="QString" key="RunConfiguration.WorkingDirectory.default">D:/Desktop/program learn/uiDesigner/ahutTool</value>
    </valuemap>
    <value type="qlonglong" key="ProjectExplorer.Target.RunConfigurationCount">1</value>
   </valuemap>

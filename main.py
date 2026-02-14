@@ -1,22 +1,24 @@
 # This Python file uses the following encoding: utf-8
 import sys
 import requests
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog,QHeaderView
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog
 from PySide6.QtGui import QPalette,QStandardItemModel,QStandardItem
 from PySide6.QtCore import Qt, QThread, Signal,QDate
 from urllib import parse
 import base64
 from bs4 import BeautifulSoup
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap,QIcon
 from os import system as CmdCommand
-from pathlib import Path
 # 导入编译后的主UI和子UI类
-from ui_py.ui_form import Ui_mian
+from ui_py.ui_form import Ui_main
 from ui_py.ui_userInfo import Ui_userInfo
 from ui_py.ui_login import Ui_login
 from ui_py.ui_selfPrint import Ui_selfPrint
 from ui_py.ui_examSearch import Ui_examSearch
 from ui_py.ui_classSchedule import Ui_classSchedule
+from ui_py.ui_appInfo import Ui_appInfo
+#导入资源文件
+from img_py.img_icon import *
 #配置
 baseUrl = "http://jwxt.ahut.edu.cn/jsxsd/"
 loginSuf = "xk/LoginToXk"
@@ -36,7 +38,6 @@ toolButtonNameList = ["userInfo_button",
                       "examSearch_button",
                       "classSchedule_button",
                       "robClasses_button",
-                      "settings_button",
                       "appInfo_button"]
 userId = ""
 userpwd = ""
@@ -55,8 +56,10 @@ class Main(QWidget):
     global logined
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.ui = Ui_mian()
+        self.ui = Ui_main()
         self.ui.setupUi(self)
+        self.setWindowTitle("Ahut Tool 2.0")
+        self.setWindowIcon(QIcon(":/icon/icon_256.svg"))
         #加载所有子ui
         self.subWidget = QStackedWidget(self)
         self.ui.subWidget.layout().addWidget(self.subWidget)
@@ -65,11 +68,13 @@ class Main(QWidget):
         self.ui_selfPrint_widget = Ui_selfPrint_widget()
         self.ui_examSearch_widget = Ui_examSearch_widget()
         self.ui_classSchedule_widget = Ui_classSchedule_widget()
+        self.ui_appInfo_widget = Ui_appInfo_widget()
         self.subWidget.addWidget(self.ui_login_widget)
         self.subWidget.addWidget(self.ui_userInfo_widget)
         self.subWidget.addWidget(self.ui_selfPrint_widget)
         self.subWidget.addWidget(self.ui_examSearch_widget)
         self.subWidget.addWidget(self.ui_classSchedule_widget)
+        self.subWidget.addWidget(self.ui_appInfo_widget)
         #连接登录成功信号
         self.ui_login_widget.loginSuccess.connect(lambda state,message:self.on_login_result(state,message))
         #登录失效信号
@@ -80,6 +85,7 @@ class Main(QWidget):
         self.ui.selfPrint_button.clicked.connect(lambda :self.enable_Ui_selfPrint_widget())
         self.ui.examSearch_button.clicked.connect(lambda :self.enable_Ui_examSearch_widget())
         self.ui.classSchedule_button.clicked.connect(lambda :self.enable_Ui_classSchedule_widget())
+        self.ui.appInfo_button.clicked.connect(lambda :self.enable_Ui_appInfo_widget())
     
     def on_login_result(self, state:bool, message:str):
         if state:
@@ -128,6 +134,12 @@ class Main(QWidget):
         else:
             self.loginExpired("你还没有登录哦~")
 
+    def enable_Ui_appInfo_widget(self):
+        print("侧边栏关于软件按钮被点击\n")
+        restoreAllToolButton(self)
+        self.ui.appInfo_button.setEnabled(False)
+        self.subWidget.setCurrentWidget(self.ui_appInfo_widget)
+
 #登录子界面
 class Ui_login_widget(QWidget):
     loginSuccess = Signal(bool, str)
@@ -161,13 +173,13 @@ class Ui_login_widget(QWidget):
             self.setMessageShow("请勾选同意协议",color=Qt.red)
             return
 
-        self.setMessageShow("正在登录...",color=Qt.yellow)
+        self.setMessageShow("正在登录...",color=Qt.darkYellow)
         self.ui_login.login_button.setEnabled(False)
         login(self, self.login_returnFunction)
         
     def login_returnFunction(self,state:bool,message:str):
         if state:
-            self.setMessageShow(message,color=Qt.green)
+            self.setMessageShow(message,color=Qt.darkGreen)
             self.loginSuccess.emit(state,message)
         else:
             self.setMessageShow(message,color=Qt.red)
@@ -228,7 +240,7 @@ class Ui_userInfo_widget(QWidget):
         #获取当前学期
         if semester == "":
             print("正在获取当前学期...\n")
-            self.setMessageShow("正在获取当前学期...",color=Qt.yellow)
+            self.setMessageShow("正在获取当前学期...",color=Qt.darkYellow)
             if not self.getsemesterThread:
                 self.getsemesterThread = GetRequestThread(parse.urljoin(baseUrl, semesterUrlSuf))
                 self.getsemesterThread.resultSignal.connect(self.fillSemester)
@@ -249,7 +261,7 @@ class Ui_userInfo_widget(QWidget):
             print("获取当前学期失败\n")
             return
         semester = semester.get("value","")
-        self.setMessageShow("当前学期:" + semester,color=Qt.green)
+        self.setMessageShow("当前学期:" + semester,color=Qt.darkGreen)
         print("当前学期:" + semester + "\n")
 
     def loginOut(self):
@@ -263,7 +275,7 @@ class Ui_userInfo_widget(QWidget):
     def getUserInfo(self):
         #获取用户信息
         print("正在获取用户信息...\n")
-        self.setMessageShow("正在获取用户信息...",color=Qt.yellow)
+        self.setMessageShow("正在获取用户信息...",color=Qt.darkYellow)
         userInfoUrl = parse.urljoin(baseUrl, userInfoSuf)
         try:
             if not self.getUserInfoThread:
@@ -277,7 +289,7 @@ class Ui_userInfo_widget(QWidget):
         
         #获取用户头像
         print("正在获取用户头像...\n")
-        self.setMessageShow("正在获取用户头像...",color=Qt.yellow)
+        self.setMessageShow("正在获取用户头像...",color=Qt.darkYellow)
         userAvatarUrl = parse.urljoin(baseUrl, userImgUrlSuf)
         try:
             if not self.getuserAvatarThread:
@@ -300,7 +312,7 @@ class Ui_userInfo_widget(QWidget):
         pixmap = QPixmap()
         pixmap.loadFromData(userAvatar)
         self.Ui_userInfo.userAvatar.setPixmap(pixmap)
-        self.setMessageShow("用户头像获取成功!",color=Qt.green)
+        self.setMessageShow("用户头像获取成功!",color=Qt.darkGreen)
         print("用户头像获取成功!\n")
 
     #回调:解析用户信息并填入界面
@@ -310,7 +322,7 @@ class Ui_userInfo_widget(QWidget):
             self.setMessageShow(message,color=Qt.red)
             print(message + "\n")
             return
-        self.setMessageShow("填入用户信息中...",color=Qt.green)
+        self.setMessageShow("填入用户信息中...",color=Qt.darkGreen)
         global userName, userDepartment, userMajor, userClass, userId
         soup = BeautifulSoup(response.text, "lxml")
         try:
@@ -325,7 +337,7 @@ class Ui_userInfo_widget(QWidget):
             self.Ui_userInfo.userDepartment.setText(userDepartment)
             self.Ui_userInfo.userMajor.setText(userMajor)
             self.Ui_userInfo.userClass.setText(userClass)
-            self.setMessageShow("用户信息获取成功!",color=Qt.green)
+            self.setMessageShow("用户信息获取成功!",color=Qt.darkGreen)
             print("用户信息获取成功!\n")
         except Exception as e:
             self.setMessageShow("解析用户信息异常:" + str(e),color=Qt.red)
@@ -399,7 +411,7 @@ class Ui_selfPrint_widget(QWidget):
                 self.setMessageShow("已经有一个下载任务了，请稍后再试")
                 return
             
-            self.setMessageShow(f"请选择保存路径",color=Qt.yellow)
+            self.setMessageShow(f"请选择保存路径",color=Qt.darkYellow)
             self.destPath = QFileDialog.getExistingDirectory(
                 self,
                 f"选择文件夹以保存 {ButtonName}.pdf",
@@ -412,11 +424,11 @@ class Ui_selfPrint_widget(QWidget):
                 print(f"选中的文件夹路径：{self.destPath}")
             else:
                 print("用户取消了选择")
-                self.setMessageShow("您取消了选择",color=Qt.yellow)
+                self.setMessageShow("您取消了选择",color=Qt.darkYellow)
                 return
 
             self.downloadPrintFile.start()
-            self.setMessageShow(f"正在下载{ButtonName}的打印文件...",color=Qt.yellow)
+            self.setMessageShow(f"正在下载{ButtonName}的打印文件...",color=Qt.darkYellow)
             print(f"正在下载{ButtonName}的打印文件...\n")
             self.fileName = ButtonName + ".pdf"
         except Exception as e:
@@ -445,7 +457,7 @@ class Ui_selfPrint_widget(QWidget):
             self.setMessageShow(f"保存打印文件异常:" + str(e),color=Qt.red)
             print(f"保存打印文件异常:" + str(e) + "\n")
             return
-        self.setMessageShow(f"{dest} 保存成功!",color=Qt.green)
+        self.setMessageShow(f"{dest} 保存成功!",color=Qt.darkGreen)
         print(f"{dest} 保存成功!\n")
        
     def showEvent(self, event):
@@ -506,10 +518,10 @@ class Ui_examSearch_widget(QWidget):
 
             if len(examList[1].find_all("td")) == 1:
                 print("暂无集中考试\n")
-                self.setMessageShow1("暂无集中考试↑",color=Qt.green)
+                self.setMessageShow1("暂无集中考试↑",color=Qt.darkGreen)
                 return
             else:
-                self.setMessageShow1("集中考试↑",color=Qt.yellow)
+                self.setMessageShow1("集中考试↑",color=Qt.darkYellow)
 
             for items in examList[1:]:
                 self.DataModel1.appendRow([QStandardItem(str(item.text.strip())) for item in items.find_all("td")])
@@ -531,7 +543,7 @@ class Ui_examSearch_widget(QWidget):
                 print("获取考试列表2失败\n")
                 return
             else:
-                self.setMessageShow("分散考试↑",color=Qt.yellow)
+                self.setMessageShow("分散考试↑",color=Qt.darkYellow)
 
             examList = examList.find_all("tr")
             self.colCnt = len(examList[0].find_all("th"))
@@ -539,7 +551,7 @@ class Ui_examSearch_widget(QWidget):
             self.DataModel2.setHorizontalHeaderLabels([str(item.text.strip()) for item in examList[0].find_all("th")])
 
             if len(examList[1].find_all("td")) == 1:
-                self.setMessageShow("暂无分散考试↑",color=Qt.green)
+                self.setMessageShow("暂无分散考试↑",color=Qt.darkGreen)
                 print("暂无分散考试\n")
                 return
 
@@ -597,7 +609,7 @@ class Ui_classSchedule_widget(QWidget):
         self.getClassScheduleThreading = PostRequestThread(parse.urljoin(baseUrl, classScheduleUrlSuf),data = {"rq" : selectDate})
         self.getClassScheduleThreading.resultSignal.connect(self.fillClassSchedule)
         self.getClassScheduleThreading.start()
-        self.setMessageShow("正在查询课程表..." + selectDate,color=Qt.yellow)
+        self.setMessageShow("正在查询课程表..." + selectDate,color=Qt.darkYellow)
         print("正在查询课程表...\n")
         
     def fillClassSchedule(self,state:bool = False,message:str = "",response:requests.Response = None):
@@ -615,7 +627,7 @@ class Ui_classSchedule_widget(QWidget):
             self.tableModel.setHorizontalHeaderLabels([str(item.text.strip()) for item in items[0].find_all("th")])
 
             if len(items) == 1:
-                self.setMessageShow("暂无课程信息",color=Qt.green)
+                self.setMessageShow("暂无课程信息",color=Qt.darkGreen)
                 print("暂无课程信息\n")
                 return
 
@@ -628,7 +640,7 @@ class Ui_classSchedule_widget(QWidget):
                     self.tableModel.appendRow([QStandardItem( str( td.text if td.find("p") == None else td.find("p").text).replace(" ","").strip() ) for td in item.find_all("td")])
             self.ui_classSchedule.classScheduleTable.setModel(self.tableModel)
 
-            self.setMessageShow("解析课程表成功!",color=Qt.green)
+            self.setMessageShow("解析课程表成功!",color=Qt.darkGreen)
             print("解析课程表成功!\n")
         except Exception as e:
             print("解析课程表异常:" + str(e) + "\n")
@@ -639,7 +651,15 @@ class Ui_classSchedule_widget(QWidget):
         paletter.setColor(QPalette.WindowText, color)
         self.ui_classSchedule.messageShow.setPalette(paletter)
         self.ui_classSchedule.messageShow.setText(message)
-            
+
+#关于界面
+class Ui_appInfo_widget(QWidget):
+    def __init__(self, parent:type = None):
+        super().__init__(parent)
+        self.ui_appInfo = Ui_appInfo()
+        self.ui_appInfo.setupUi(self)
+        self.ui_appInfo.icon.setPixmap(QPixmap(":/icon/icon_256.svg"))
+
 #登录线程
 class LoginThread(QThread): 
     global session, userId, userpwd

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>appInfo</class>
+ <widget class="QWidget" name="appInfo">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>633</width>
+    <height>541</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>appInfo</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item row="0" column="0">
+    <widget class="QLabel" name="icon">
+     <property name="maximumSize">
+      <size>
+       <width>256</width>
+       <height>256</height>
+      </size>
+     </property>
+     <property name="sizeIncrement">
+      <size>
+       <width>20</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;软件作者:fx_tourist&lt;/p&gt;&lt;p&gt;图标来源：iconfont&lt;/p&gt;&lt;p&gt;图标作者：hnck2000&lt;/p&gt;&lt;p&gt;图片来源均为安工大官网&lt;/p&gt;&lt;p&gt;本软件使用 Qt 框架 开发。&lt;/p&gt;&lt;p&gt;Qt 由 The Qt Company 开发，基于 LGPLv3 开源协议授权。&lt;/p&gt;&lt;p&gt;Qt 版权所有 © The Qt Company Ltd. 保留所有权利。&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

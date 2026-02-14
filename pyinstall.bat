@@ -1,7 +1,6 @@
-pyinstaller "main.py" -F --distpath .\  --clean ^
+pyinstaller "main.py" -F --noconsole --name "Ahut Tool 2.0" --distpath .\  --clean ^
 --exclude-module unittest --exclude-module matplotlib ^
---hidden-import=tkinter --hidden-import=tkinter.ttk ^
--i ".\favicon.ico" ^
+-i ".\img_src\icon_256.png" ^
 --noconfirm
 
 pause

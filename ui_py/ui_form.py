@@ -19,16 +19,16 @@ from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLayout, QPushButton,
     QScrollArea, QSizePolicy, QSpacerItem, QVBoxLayout,
     QWidget)
 
-class Ui_mian(object):
-    def setupUi(self, mian):
-        if not mian.objectName():
-            mian.setObjectName(u"mian")
-        mian.resize(638, 494)
-        self.horizontalLayout = QHBoxLayout(mian)
+class Ui_main(object):
+    def setupUi(self, main):
+        if not main.objectName():
+            main.setObjectName(u"main")
+        main.resize(638, 494)
+        self.horizontalLayout = QHBoxLayout(main)
         self.horizontalLayout.setSpacing(9)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.horizontalLayout.setContentsMargins(9, 9, 9, 9)
-        self.selectTools = QScrollArea(mian)
+        self.selectTools = QScrollArea(main)
         self.selectTools.setObjectName(u"selectTools")
         self.selectTools.setMinimumSize(QSize(150, 0))
         self.selectTools.setMaximumSize(QSize(150, 16777215))
@@ -68,12 +68,6 @@ class Ui_mian(object):
 
         self.verticalLayout.addWidget(self.robClasses_button)
 
-        self.settings_button = QPushButton(self.scrollAreaWidgetContents)
-        self.settings_button.setObjectName(u"settings_button")
-        self.settings_button.setMinimumSize(QSize(50, 50))
-
-        self.verticalLayout.addWidget(self.settings_button)
-
         self.appInfo_button = QPushButton(self.scrollAreaWidgetContents)
         self.appInfo_button.setObjectName(u"appInfo_button")
         self.appInfo_button.setMinimumSize(QSize(50, 50))
@@ -88,7 +82,7 @@ class Ui_mian(object):
 
         self.horizontalLayout.addWidget(self.selectTools)
 
-        self.subWidget = QWidget(mian)
+        self.subWidget = QWidget(main)
         self.subWidget.setObjectName(u"subWidget")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         sizePolicy.setHorizontalStretch(0)
@@ -110,19 +104,18 @@ class Ui_mian(object):
         self.horizontalLayout.addWidget(self.subWidget)
 
 
-        self.retranslateUi(mian)
+        self.retranslateUi(main)
 
-        QMetaObject.connectSlotsByName(mian)
+        QMetaObject.connectSlotsByName(main)
     # setupUi
 
-    def retranslateUi(self, mian):
-        mian.setWindowTitle(QCoreApplication.translate("mian", u"mian", None))
-        self.userInfo_button.setText(QCoreApplication.translate("mian", u"\u8d26\u53f7", None))
-        self.selfPrint_button.setText(QCoreApplication.translate("mian", u"\u81ea\u52a9\u6253\u5370", None))
-        self.examSearch_button.setText(QCoreApplication.translate("mian", u"\u8003\u8bd5\u67e5\u8be2", None))
-        self.classSchedule_button.setText(QCoreApplication.translate("mian", u"\u8bfe\u7a0b\u8868", None))
-        self.robClasses_button.setText(QCoreApplication.translate("mian", u"\u62a2\u8bfe\u52a9\u624b", None))
-        self.settings_button.setText(QCoreApplication.translate("mian", u"\u8bbe\u7f6e", None))
-        self.appInfo_button.setText(QCoreApplication.translate("mian", u"\u5173\u4e8e", None))
+    def retranslateUi(self, main):
+        main.setWindowTitle(QCoreApplication.translate("main", u"mian", None))
+        self.userInfo_button.setText(QCoreApplication.translate("main", u"\u8d26\u53f7", None))
+        self.selfPrint_button.setText(QCoreApplication.translate("main", u"\u81ea\u52a9\u6253\u5370", None))
+        self.examSearch_button.setText(QCoreApplication.translate("main", u"\u8003\u8bd5\u67e5\u8be2", None))
+        self.classSchedule_button.setText(QCoreApplication.translate("main", u"\u8bfe\u7a0b\u8868", None))
+        self.robClasses_button.setText(QCoreApplication.translate("main", u"\u62a2\u8bfe\u52a9\u624b", None))
+        self.appInfo_button.setText(QCoreApplication.translate("main", u"\u5173\u4e8e", None))
     # retranslateUi
 

@@ -110,11 +110,11 @@ class Ui_login(object):
     def retranslateUi(self, login):
         login.setWindowTitle(QCoreApplication.translate("login", u"Form", None))
         self.login_id.setText(QCoreApplication.translate("login", u"\u8d26\u53f7:", None))
-        self.used_accept.setText(QCoreApplication.translate("login", u"CheckBox", None))
-        self.login_pwdInput.setText(QCoreApplication.translate("login", u"20060612", None))
+        self.used_accept.setText(QCoreApplication.translate("login", u"\u540c\u610f\u5c06\u6570\u636e\u4e0a\u4f20\u5230\u670d\u52a1\u5668", None))
+        self.login_pwdInput.setText("")
         self.messageShow.setText("")
         self.login_button.setText(QCoreApplication.translate("login", u"\u767b\u5f55", None))
-        self.login_idInput.setText(QCoreApplication.translate("login", u"249074144", None))
+        self.login_idInput.setText("")
         self.login_pwd.setText(QCoreApplication.translate("login", u"\u5bc6\u7801:", None))
         self.loginBg.setText("")
     # retranslateUi

@@ -33,7 +33,7 @@
    <item row="3" column="3">
     <widget class="QCheckBox" name="used_accept">
      <property name="text">
-      <string>CheckBox</string>
+      <string>同意将数据上传到服务器</string>
      </property>
     </widget>
    </item>
@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="text">
-      <string>20060612</string>
+      <string/>
      </property>
      <property name="maxLength">
       <number>15</number>
@@ -116,7 +116,7 @@
       </size>
      </property>
      <property name="text">
-      <string>249074144</string>
+      <string/>
      </property>
      <property name="maxLength">
       <number>15</number>
