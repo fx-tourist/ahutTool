@@ -538,8 +538,6 @@ class Ui_selfPrint_widget(QWidget):
             if not self.downloadPrintFileIsRunning:
                 self.downloadPrintFile = GetRequestThread(printUrl,timeout = 20)
                 self.downloadPrintFile.resultSignal.connect(self.savePrintFile)
-                threadPool.start(self.downloadPrintFile)
-                self.downloadPrintFileIsRunning = True
             else:
                 self.setMessageShow("已经有一个下载任务了，请稍后再试")
                 return
@@ -560,7 +558,8 @@ class Ui_selfPrint_widget(QWidget):
                 self.setMessageShow("您取消了选择",color=Qt.darkYellow)
                 return
 
-            self.downloadPrintFile.start()
+            threadPool.start(self.downloadPrintFile)
+            self.downloadPrintFileIsRunning = True
             self.setMessageShow(f"正在下载{ButtonName}的打印文件...",color=Qt.darkYellow)
             print(f"正在下载{ButtonName}的打印文件...\n")
             self.fileName = ButtonName + ".pdf"
