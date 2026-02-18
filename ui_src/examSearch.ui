@@ -31,6 +31,11 @@
    </property>
    <item>
     <widget class="QTableView" name="examTable1">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">QTableView{border:none;}</string>
      </property>
@@ -41,6 +46,9 @@
       <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
      </property>
      <attribute name="horizontalHeaderCascadingSectionResizes">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
       <bool>false</bool>
      </attribute>
      <attribute name="verticalHeaderCascadingSectionResizes">
@@ -56,6 +64,11 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
      <property name="text">
       <string/>
      </property>
@@ -69,6 +82,11 @@
    </item>
    <item>
     <widget class="QTableView" name="examTable2">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">QTableView{border:none;}</string>
      </property>
@@ -81,18 +99,26 @@
      <attribute name="horizontalHeaderCascadingSectionResizes">
       <bool>false</bool>
      </attribute>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
      <attribute name="verticalHeaderCascadingSectionResizes">
       <bool>false</bool>
      </attribute>
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="messageShow">
+    <widget class="QLabel" name="messageShow2">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
      </property>
      <property name="text">
       <string/>

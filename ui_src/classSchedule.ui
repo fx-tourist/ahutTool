@@ -35,15 +35,82 @@
    <property name="bottomMargin">
     <number>0</number>
    </property>
-   <item row="2" column="4">
+   <item row="2" column="5">
+    <widget class="QPushButton" name="lastWeek">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>上一周</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLabel" name="curWeekMessage">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1" colspan="9">
+    <widget class="QLabel" name="messageShow">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
+    <widget class="QCheckBox" name="showDetail">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>显示详细课表</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="7">
     <widget class="QPushButton" name="search">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
      <property name="text">
       <string>查询</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="1" colspan="6">
+   <item row="5" column="1" colspan="9">
     <widget class="QTableView" name="classScheduleTable">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">QtableWidget{border:none;}</string>
      </property>
@@ -67,31 +134,34 @@
      </attribute>
     </widget>
    </item>
-   <item row="2" column="1">
-    <widget class="QLabel" name="selectedDate">
-     <property name="text">
-      <string>选择的日期</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1" colspan="6">
-    <widget class="QLabel" name="messageShow">
+   <item row="2" column="2">
+    <widget class="QDateEdit" name="dateEdit">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
-     <property name="text">
-      <string/>
+     <property name="minimumSize">
+      <size>
+       <width>125</width>
+       <height>0</height>
+      </size>
      </property>
-     <property name="wordWrap">
+     <property name="sizeIncrement">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="wrapping">
       <bool>true</bool>
      </property>
-    </widget>
-   </item>
-   <item row="2" column="2">
-    <widget class="QDateEdit" name="dateEdit">
      <property name="displayFormat">
       <string>yyyy/M/d</string>
      </property>
@@ -101,24 +171,37 @@
     </widget>
    </item>
    <item row="2" column="6">
+    <widget class="QPushButton" name="nextWeek">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>下一周</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="4">
     <spacer name="horizontalSpacer">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+      </font>
+     </property>
      <property name="orientation">
       <enum>Qt::Orientation::Horizontal</enum>
      </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Policy::Expanding</enum>
+     </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>40</width>
-       <height>20</height>
+       <width>0</width>
+       <height>0</height>
       </size>
      </property>
     </spacer>
-   </item>
-   <item row="2" column="3">
-    <widget class="QCheckBox" name="showDetail">
-     <property name="text">
-      <string>显示详细课表</string>
-     </property>
-    </widget>
    </item>
   </layout>
  </widget>

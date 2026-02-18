@@ -10,6 +10,12 @@
     <height>541</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
    <string>appInfo</string>
   </property>
@@ -27,48 +33,101 @@
     <number>0</number>
    </property>
    <item row="0" column="0">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="0" column="2">
+    <spacer name="horizontalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Policy::Expanding</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="0" column="1">
     <widget class="QLabel" name="icon">
+     <property name="minimumSize">
+      <size>
+       <width>256</width>
+       <height>256</height>
+      </size>
+     </property>
      <property name="maximumSize">
       <size>
        <width>256</width>
        <height>256</height>
       </size>
      </property>
-     <property name="sizeIncrement">
-      <size>
-       <width>20</width>
-       <height>0</height>
-      </size>
-     </property>
      <property name="text">
       <string/>
      </property>
-     <property name="scaledContents">
-      <bool>true</bool>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignmentFlag::AlignCenter</set>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label_2">
+   <item row="2" column="0" colspan="3">
+    <widget class="QLabel" name="label">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777209</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <bold>false</bold>
+       <kerning>true</kerning>
+       <hintingpreference>PreferFullHinting</hintingpreference>
+      </font>
+     </property>
+     <property name="lineWidth">
+      <number>0</number>
+     </property>
+     <property name="midLineWidth">
+      <number>0</number>
+     </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;软件作者:fx_tourist&lt;/p&gt;&lt;p&gt;图标来源：iconfont&lt;/p&gt;&lt;p&gt;图标作者：hnck2000&lt;/p&gt;&lt;p&gt;图片来源均为安工大官网&lt;/p&gt;&lt;p&gt;本软件使用 Qt 框架 开发。&lt;/p&gt;&lt;p&gt;Qt 由 The Qt Company 开发，基于 LGPLv3 开源协议授权。&lt;/p&gt;&lt;p&gt;Qt 版权所有 © The Qt Company Ltd. 保留所有权利。&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;部分图片来源于安工大官网&lt;br/&gt;部分图标基于 MIT 协议，来自&lt;a href=&quot;https://gitlab.com/SUSE-UIUX/eos-icons&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt; SUSE UX/UI team&lt;/span&gt;&lt;/a&gt;&lt;br/&gt;本软件使用 Qt 框架 开发。&lt;br/&gt;Qt 由 The Qt Company 开发，基于 LGPLv3 开源协议授权。&lt;br/&gt;Qt 版权所有 © The Qt Company Ltd. 保留所有权利。&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
      <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="openExternalLinks">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="3">
+    <widget class="QTextBrowser" name="appInfoMessage">
+     <property name="styleSheet">
+      <string notr="true">QTextBrowser { border: none; }</string>
+     </property>
+     <property name="openExternalLinks">
       <bool>true</bool>
      </property>
     </widget>
