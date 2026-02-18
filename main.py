@@ -3,7 +3,7 @@ import sys
 import requests
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog
 from PySide6.QtGui import QPalette,QStandardItemModel,QStandardItem,QMovie
-from PySide6.QtCore import Qt, QThread, Signal,QDate
+from PySide6.QtCore import Qt, QThread, Signal,QDate, QRunnable, QThreadPool,Slot,QObject
 from PySide6.QtGui import QPixmap,QIcon
 from urllib import parse
 import base64 
@@ -58,6 +58,7 @@ appVersion = "2.0"
 appDataDes = os.path.join(os.getenv("APPDATA"),"ahutTool")
 loginOptionsData = {}
 app = QApplication(sys.argv)
+threadPool = QThreadPool.globalInstance()
 
 #主界面
 class Main(QWidget):
@@ -201,6 +202,8 @@ class Ui_login_widget(QWidget):
         self.ui_login.login_button.clicked.connect(self.on_login_button_clicked)
         self.loginThread = None
         self.getLoginBgThread = None
+        self.loginThreadIsRunning = False
+        self.getLoginBgThreadIsRunning = False
         print("ui_login_widget实例已创建\n")
         self.getLoginBg()
         
@@ -287,8 +290,9 @@ class Ui_login_widget(QWidget):
             return
 
         self.setMessageShow("正在登录...",color=Qt.darkYellow)
+
         login(self, self.login_returnFunction)
-        
+
     def login_returnFunction(self,state:bool,message:str):
         if state:
             self.setMessageShow(message,color=Qt.darkGreen)
@@ -297,21 +301,23 @@ class Ui_login_widget(QWidget):
             self.setMessageShow(message,color=Qt.red)
         self.ui_login.login_button.setEnabled(True)
         self.ui_login.used_accept.setEnabled(True)
+        self.loginThreadIsRunning = False
     
     def getLoginBg(self):
         print("正在获取登录界面背景...\n")
         loginBgUrl = parse.urljoin(baseUrl, loginBgUrlSuf)
         try:
-            if not self.getLoginBgThread:
+            if not self.getLoginBgThreadIsRunning:
                 self.getLoginBgThread = GetRequestThread(url=loginBgUrl, timeout=5)
                 self.getLoginBgThread.resultSignal.connect(self.fillLoginBg)
-            if not self.getLoginBgThread.isRunning():
-                self.getLoginBgThread.start()
+                threadPool.start(self.getLoginBgThread)
+                self.getLoginBgThreadIsRunning = True
         except Exception as e:
             print("获取登录界面背景异常:" + str(e) + "\n")
             self.setMessageShow("获取登录界面背景异常:" + str(e),color=Qt.red)
     
     def fillLoginBg(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.getLoginBgThreadIsRunning = False
         if not state:
             print(message + "\n")
             self.setMessageShow(message,color=Qt.red)
@@ -336,11 +342,15 @@ class Ui_userInfo_widget(QWidget):
         self.getUserInfoThread = None
         self.getuserAvatarThread = None
         self.getsemesterThread = None
-
+        self.loginThreadIsRunning = False
+        self.getUserInfoThreadIsRunning = False
+        self.getuserAvatarThreadIsRunning = False
+        self.getsemesterThreadIsRunning = False
 
     def loginExpired(self, state:bool = False,message:str = ""):
         if not state:
             self.loginExpiredSignal.emit(message)
+        self.loginThreadIsRunning = False
         
     def showEvent(self, event):
         super().showEvent(event)
@@ -354,14 +364,15 @@ class Ui_userInfo_widget(QWidget):
         if semester == "":
             print("正在获取当前学期...\n")
             self.setMessageShow("正在获取当前学期...",color=Qt.darkYellow)
-            if not self.getsemesterThread:
+            if not self.getsemesterThreadIsRunning:
                 self.getsemesterThread = GetRequestThread(parse.urljoin(baseUrl, semesterUrlSuf))
                 self.getsemesterThread.resultSignal.connect(self.fillSemester)
-            if not self.getsemesterThread.isRunning():
-                self.getsemesterThread.start()
+                threadPool.start(self.getsemesterThread)
+                self.getsemesterThreadIsRunning = True
         return
 
     def fillSemester(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.getsemesterThreadIsRunning = False
         if not state:
             self.setMessageShow(message,color=Qt.red)
             print(message + "\n")
@@ -391,11 +402,12 @@ class Ui_userInfo_widget(QWidget):
         self.setMessageShow("正在获取用户信息...",color=Qt.darkYellow)
         userInfoUrl = parse.urljoin(baseUrl, userInfoSuf)
         try:
-            if not self.getUserInfoThread:
+            if not self.getUserInfoThreadIsRunning:
                 self.getUserInfoThread = GetRequestThread(url=userInfoUrl, timeout=5)
                 self.getUserInfoThread.resultSignal.connect(self.fillUserInfo)
-            if not self.getUserInfoThread.isRunning():
-                self.getUserInfoThread.start()
+                threadPool.start(self.getUserInfoThread)
+                self.getUserInfoThreadIsRunning = True
+
         except Exception as e:
             self.setMessageShow("获取用户信息异常:" + str(e),color=Qt.red)
             print("获取用户信息异常:" + str(e) + "\n")
@@ -408,14 +420,15 @@ class Ui_userInfo_widget(QWidget):
             if not self.getuserAvatarThread:
                 self.getuserAvatarThread = GetRequestThread(url=userAvatarUrl, timeout=5)
                 self.getuserAvatarThread.resultSignal.connect(self.fillUserAvatar)
-            if not self.getuserAvatarThread.isRunning():
-                self.getuserAvatarThread.start()
+                threadPool.start(self.getuserAvatarThread)
+                self.getuserAvatarThreadIsRunning = True
         except Exception as e:
             self.setMessageShow("获取用户头像异常:" + str(e),color=Qt.red)
             print("获取用户头像异常:" + str(e) + "\n")
 
     #回调:解析用户头像并填入界面
     def fillUserAvatar(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.getuserAvatarThreadIsRunning = False
         if not state:
             self.setMessageShow(message,color=Qt.red)
             print(message + "\n")
@@ -430,7 +443,7 @@ class Ui_userInfo_widget(QWidget):
 
     #回调:解析用户信息并填入界面
     def fillUserInfo(self,state:bool = False,message:str = "",response:requests.Response = None):
-        #print(f"{type(response)}\n")
+        self.getUserInfoThreadIsRunning = False
         if not state:
             self.setMessageShow(message,color=Qt.red)
             print(message + "\n")
@@ -470,16 +483,20 @@ class Ui_selfPrint_widget(QWidget):
         self.ui_selfPrint.setupUi(self)
         self.getPrintListThreading = None
         self.downloadPrintFile = None
+        self.getPrintListThreadingIsRunning = False
+        self.downloadPrintFileIsRunning = False
     
     def getPrintList(self):
         printListUrl = parse.urljoin(baseUrl, printListSuf)
-        if not self.getPrintListThreading:
+        if not self.getPrintListThreadingIsRunning:
             self.getPrintListThreading = GetRequestThread(printListUrl)
             self.getPrintListThreading.resultSignal.connect(self.fillPrintList)
-        if not self.getPrintListThreading.isRunning():
-            self.getPrintListThreading.start()
+            threadPool.start(self.getPrintListThreading)
+            self.getPrintListThreadingIsRunning = True
+
     
     def fillPrintList(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.getPrintListThreadingIsRunning = False
         try:
             if not state:
                 self.setMessageShow(message,color=Qt.red)
@@ -518,10 +535,12 @@ class Ui_selfPrint_widget(QWidget):
         printUrl = parse.urljoin(baseUrl, linkUrlSuf)
         print(f"打印按钮{ButtonName}被点击，链接为{printUrl}\n")
         try:
-            if not self.downloadPrintFile:
+            if not self.downloadPrintFileIsRunning:
                 self.downloadPrintFile = GetRequestThread(printUrl,timeout = 20)
                 self.downloadPrintFile.resultSignal.connect(self.savePrintFile)
-            if self.downloadPrintFile.isRunning():
+                threadPool.start(self.downloadPrintFile)
+                self.downloadPrintFileIsRunning = True
+            else:
                 self.setMessageShow("已经有一个下载任务了，请稍后再试")
                 return
             
@@ -551,8 +570,7 @@ class Ui_selfPrint_widget(QWidget):
             raise
 
     def savePrintFile(self,state:bool = False,message:str = "",response:requests.Response = None):
-        self.downloadPrintFile.deleteLater()
-        self.downloadPrintFile = None
+        self.downloadPrintFileIsRunning = False
         if not state:
             self.setMessageShow(message,color=Qt.red)
             print(message + "\n")
@@ -593,6 +611,8 @@ class Ui_examSearch_widget(QWidget):
         self.ui_examSearch.setupUi(self)
         self.getExamListThreading1 = None
         self.getExamListThreading2 = None
+        self.getExamListThreading1IsRunning = False
+        self.getExamListThreading2IsRunning = False
         self.DataModel1 = QStandardItemModel()
         self.ui_examSearch.examTable1.setModel(self.DataModel1)
         self.DataModel2 = QStandardItemModel()
@@ -601,18 +621,20 @@ class Ui_examSearch_widget(QWidget):
     def getExamList(self):
         self.DataModel1.setRowCount(0)
         self.DataModel2.setRowCount(0)
-        if not self.getExamListThreading1:
+        if not self.getExamListThreading1IsRunning:
             self.getExamListThreading1 = PostRequestThread(parse.urljoin(baseUrl, examListSuf1),data={"xnxqid":semester})
             self.getExamListThreading1.resultSignal.connect(self.fillExamList1)
-        if not self.getExamListThreading1.isRunning():
-            self.getExamListThreading1.start()
-        if not self.getExamListThreading2:
+            threadPool.start(self.getExamListThreading1)
+            self.getExamListThreading1IsRunning = True
+
+        if not self.getExamListThreading2IsRunning:
             self.getExamListThreading2 = PostRequestThread(parse.urljoin(baseUrl, examListSuf2),data={"xnxqid":semester})
             self.getExamListThreading2.resultSignal.connect(self.fillExamList2)
-        if not self.getExamListThreading2.isRunning():
-            self.getExamListThreading2.start()
+            threadPool.start(self.getExamListThreading2)
+            self.getExamListThreading2IsRunning = True
         
     def fillExamList1(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.getExamListThreading1IsRunning = False
         try:
             if not state:
                 self.setMessageShow1(message,color=Qt.red)
@@ -647,6 +669,7 @@ class Ui_examSearch_widget(QWidget):
             self.setMessageShow1("解析考试列表异常1:" + str(e),color=Qt.red)
     
     def fillExamList2(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.getExamListThreading2IsRunning = False
         try:
             if not state:
                 self.setMessageShow2(message,color=Qt.red)
@@ -709,6 +732,7 @@ class Ui_classSchedule_widget(QWidget):
         self.ui_classSchedule.setupUi(self)
         self.ui_classSchedule.dateEdit.setDate(QDate.currentDate())
         self.getClassScheduleThreading = None
+        self.getClassScheduleThreadingIsRunning = False
 
         #绑定查询按钮
         self.ui_classSchedule.search.clicked.connect(self.getClassSchedule)
@@ -720,20 +744,19 @@ class Ui_classSchedule_widget(QWidget):
 
     def getClassSchedule(self):
         selectDate = self.ui_classSchedule.dateEdit.date().toString("yyyy-MM-dd")
-        if self.getClassScheduleThreading:
-            if self.getClassScheduleThreading.isRunning():
-                self.setMessageShow("已经有一个查询任务了，请稍后再试",color=Qt.red)
-                print("已经有一个查询任务了，请稍后再试\n")
-                return
-            else:
-                self.getClassScheduleThreading.deleteLater()
+        if self.getClassScheduleThreadingIsRunning:
+            self.setMessageShow("已经有一个查询任务了，请稍后再试",color=Qt.red)
+            print("已经有一个查询任务了，请稍后再试\n")
+            return
         self.getClassScheduleThreading = PostRequestThread(parse.urljoin(baseUrl, classScheduleUrlSuf),data = {"rq" : selectDate})
         self.getClassScheduleThreading.resultSignal.connect(self.fillClassSchedule)
-        self.getClassScheduleThreading.start()
+        threadPool.start(self.getClassScheduleThreading)
+        self.getClassScheduleThreadingIsRunning = True
         self.setMessageShow("正在查询课程表..." + selectDate,color=Qt.darkYellow)
         print("正在查询课程表...\n")
         
     def fillClassSchedule(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.getClassScheduleThreadingIsRunning = False
         try:
             if not state:
                 self.setMessageShow(message,color=Qt.red)
@@ -808,6 +831,7 @@ class Ui_classSchedule_widget(QWidget):
 class Ui_appInfo_widget(QWidget):
     def __init__(self, parent:type = None):
         super().__init__(parent)
+        self.getAppInfoMessageThreadingIsRunning = False
         self.ui_appInfo = Ui_appInfo()
         self.ui_appInfo.setupUi(self)
         self.ui_appInfo.icon.setPixmap(QPixmap(":/icon/icon_256.svg"))
@@ -815,13 +839,15 @@ class Ui_appInfo_widget(QWidget):
         self.getAppInfoMessage()
 
     def getAppInfoMessage(self):
-        if self.getAppInfoMessageThreading:
+        if self.getAppInfoMessageThreadingIsRunning:
             return
         self.getAppInfoMessageThreading = GetRequestThread(appInfoMessageUrl)
         self.getAppInfoMessageThreading.resultSignal.connect(self.fillAppInfoMessage)
-        self.getAppInfoMessageThreading.start()
+        threadPool.start(self.getAppInfoMessageThreading)
+        self.getAppInfoMessageThreadingIsRunning = True
     
     def fillAppInfoMessage(self,state:bool = False,message:str = "",response:requests.Response = None):
+        self.getAppInfoMessageThreadingIsRunning = False
         try:
             if not state:
                 self.setMessageShow(message,color=Qt.red)
@@ -920,11 +946,14 @@ class Ui_robClasses_widget(QWidget):
         self.uiClass = uiClass
 
 #登录线程
-class LoginThread(QThread): 
+class LoginThread(QRunnable): 
     global session, userId, userpwd
-    result = Signal(bool, str)
     def __init__(self):
         super().__init__()
+        self.threadPoolSignals = threadPoolSignals()  # 定义一个信号，传递请求结果（成功与否和消息）
+        self.result = self.threadPoolSignals.signal_bool_str  # 定义一个信号，传递请求结果（成功与否和消息）
+    
+    @Slot()
     def run(self):
         global logined
         try:
@@ -978,24 +1007,24 @@ class LoginThread(QThread):
 
 #登录方法（在主线程调用，自动切换到登录线程执行，并通过回调函数返回结果）
 def login(self,returnFunction:type = None):
-    global session, userId, userpwd
-    if not self.loginThread:
+    if not self.loginThreadIsRunning:
         self.loginThread = LoginThread()
-        self.loginThread.result.connect(lambda state,message:returnFunction(state,message))
-
-    if not self.loginThread.isRunning():
-        self.loginThread.start()
+        self.loginThread.result.connect(returnFunction)
+        threadPool.start(self.loginThread)
+        self.loginThreadIsRunning = True
 
 #多线程get请求的通用方法（传入URL和回调函数，自动处理异常和结果回调）
-class GetRequestThread(QThread):
+class GetRequestThread(QRunnable):
     global session
-    resultSignal = Signal(int, str, requests.Response)  # 定义一个信号，传递请求结果（成功与否和消息）
     def __init__(self, url:str = "",params:dict = {},timeout:int = 5):
         super().__init__()
         self.url = url
         self.params = params
         self.timeout = timeout
+        self.threadPoolSignals = threadPoolSignals()  # 定义一个信号，传递请求结果（成功与否和消息）
+        self.resultSignal = self.threadPoolSignals.signal_int_str_resopnse  # 定义一个信号，传递请求结果（成功与否和消息）
 
+    @Slot()
     def run(self):
         try:
             response = session.get(self.url, params=self.params, timeout=self.timeout)
@@ -1005,15 +1034,17 @@ class GetRequestThread(QThread):
             self.resultSignal.emit(0, "网络异常:请检查网络连接或稍后再试",None)
 
 #多线程post请求的通用方法（传入URL、数据和回调函数，自动处理异常和结果回调）
-class PostRequestThread(QThread):
+class PostRequestThread(QRunnable):
     global session
-    resultSignal = Signal(int, str,requests.Response)  # 定义一个信号，传递请求结果（成功与否和消息）
     def __init__(self, url:str = "", data:dict = None,timeout:int = 5):
         super().__init__()
         self.url = url
         self.data = data
         self.timeout = timeout
+        self.threadPoolSignals = threadPoolSignals()  # 定义一个信号，传递请求结果（成功与否和消息）
+        self.resultSignal = self.threadPoolSignals.signal_int_str_resopnse  # 定义一个信号，传递请求结果（成功与否和消息）
 
+    @Slot()
     def run(self):
         try:
             response = session.post(self.url, data=self.data, timeout=self.timeout)
@@ -1038,6 +1069,10 @@ class connectRobClassesServer(QThread):
                 print("连接服务器异常:" + str(e))
                 self.resultSignal.emit(0, "连接服务器异常:请检查网络连接,或者作者暂未开放服务")
                 return
+
+class threadPoolSignals(QObject):
+    signal_bool_str = Signal(bool, str)
+    signal_int_str_resopnse = Signal(int, str,requests.Response)
 
 #恢复所有按钮为可点击状态
 def restoreAllToolButton(mainWindow):
