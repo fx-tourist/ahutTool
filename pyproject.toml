@@ -1,5 +1,0 @@
-[project]
-name = "PySide Widgets Project"
-
-[tool.pyside6-project]
-files = ["loading.ui", "ui_src/appInfo.ui", "ui_src/classSchedule.ui", "ui_src/examSearch.ui", "ui_src/selfPrint.ui"]

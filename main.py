@@ -35,7 +35,7 @@ examListSuf2 = "xsks/xsstk_list"
 printListSuf = "view/cjgl/zzdy_list.jsp"
 classScheduleUrlSuf = "framework/main_index_loadkb.jsp"
 appInfoMessageUrl = "http://127.0.0.1:9999/"
-robClassesUrl = "http://127.0.0.1:10000/robclasses"
+robClassesUrl = "http://127.0.0.1:9999/robclasses"
 session = requests.Session()
 session.headers.update({"X-Requested-With" : "XMLHttpRequest"})
 toolButtonNameList = ["userInfo_button",
@@ -871,10 +871,7 @@ class Ui_loading_widget(QWidget):
         super().__init__(parent)
         self.ui_loading = Ui_loading()
         self.ui_loading.setupUi(self)
-        # self.Player = QMovie(":/loading/loading2.gif")
-        # self.Player.setCacheMode(QMovie.CacheAll)
-        # self.ui_loading.loadingFrame.setMovie(self.Player)
-        # self.Player.start()
+        self.Player = QMovie()
     
     def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
         paletter = QPalette()
@@ -884,6 +881,25 @@ class Ui_loading_widget(QWidget):
 
     def setProgress(self, process:int):
         self.ui_loading.loadingProcess.setValue(process)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # 每次显示时创建新的 QMovie（避免复用旧对象）
+        self.Player = QMovie(":/loading/loading2.gif")
+        self.ui_loading.loadingFrame.setMovie(self.Player)
+        self.Player.start()
+
+    def hideEvent(self, event):
+        super().hideEvent(event)
+        if hasattr(self, 'Player') and self.Player is not None:
+            # 1. 先断开控件与 QMovie 的关联（关键！）
+            self.ui_loading.loadingFrame.setMovie(None)
+            # 2. 停止播放
+            self.Player.stop()
+            # 3. 安全销毁 C++ 对象
+            self.Player.deleteLater()
+            # 4. 清空 Python 引用，让垃圾回收器处理
+            self.Player = None
 
 #抢课界面
 class Ui_robClasses_widget(QWidget):
@@ -923,10 +939,10 @@ class Ui_robClasses_widget(QWidget):
         self.setLoadingMessage.emit("正在连接服务器...",Qt.darkYellow)
         self.loadingMessage = "正在连接服务器..."
         self.loadingMessageColor = Qt.darkYellow
-        self.connectRobClassesServerThread = connectRobClassesServer()
-        self.connectRobClassesServerThread.resultSignal.connect(self.connectRobClassesServerResult)
-        self.connectRobClassesServerThread.start()
-    
+        self.connectRobClassesServerThread = PostRequestThread(robClassesUrl)
+        self.connectRobClassesServerThread.resultSignal.connect(self.dealTheMessage)
+        threadPool.start(self.connectRobClassesServerThread)
+
     def connectRobClassesServerResult(self,state:bool,message:str):
         if not state:
             self.setLoadingMessage.emit(message,Qt.red)
@@ -938,8 +954,73 @@ class Ui_robClasses_widget(QWidget):
         self.loadingMessage = "连接服务器成功"
         self.loadingMessageColor = Qt.darkGreen
         self.setLoadingMessage.emit(self.loadingMessage,self.loadingMessageColor)
-        print("收到服务器消息:" + message)
+        print("开始通信...")
+        self.loadingMessage = "开始通信..."
+        self.loadingMessageColor = Qt.darkYellow
+        self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl)
+        self.communicateWithRobClassesServerThread.resultSignal.connect(self.dealTheMessage)
+        threadPool.start(self.communicateWithRobClassesServerThread)
+    
+    def dealTheMessage(self,state:bool,message:str,response:requests.Response):
+        try:
+            postData = {}
+            print(response.text)
+            responseJson = json.loads(response.text)
+            if not state:
+                self.setLoadingMessage.emit(message,Qt.red)
+                self.loadingMessage = message
+                self.loadingMessageColor = Qt.red
+                print(message + "\n")
+            else:
+                op = responseJson.get("op",None)
+                if op == None:
+                    self.setLoadingMessage.emit("通信异常:返回数据格式错误",Qt.red)
+                    self.loadingMessage = "通信异常:返回数据格式错误"
+                    self.loadingMessageColor = Qt.red
+                    print("通信异常:返回数据格式错误\n")
+                    return
+                elif op == 0:
+                    self.setLoadingMessage.emit("等待服务器下发数据...",Qt.darkYellow)
+                    self.loadingMessage = "等待服务器下发数据..."
+                    self.loadingMessageColor = Qt.darkYellow
+                    print("等待服务器下发数据...\n")
+                elif op == 1:
+                    self.getVals = responseJson["getVals"]
+                    postData["postVal"] = []
+                    for getVal in self.getVals:
+                        postData["postVal"].append(globals().get(getVal,None))
 
+                    self.setLoadingMessage.emit("上传账号数据中...",Qt.darkYellow)
+                    self.loadingMessage = "上传账号数据中..."
+                    self.loadingMessageColor = Qt.darkYellow
+                    print("上传账号数据中...\n")
+                elif op == 2:   
+                    self.saveVals = responseJson["saveVals"]
+                    for key,val in self.saveVals.items():
+                        globals()[key] = val
+                        print(f"收到服务器的数据{key} = {val}\n")
+                    self.setLoadingMessage.emit("保存服务器数据中...",Qt.darkYellow)
+                    self.loadingMessage = "保存服务器数据中..."
+                    self.loadingMessageColor = Qt.darkYellow
+                    print("保存服务器数据中...\n")
+                elif op == 3:
+                    self.setLoadingMessage.emit(responseJson["setMessage"], getattr(Qt, responseJson["setColor"]))
+                    self.loadingMessage = responseJson["setMessage"]
+                    self.loadingMessageColor = getattr(Qt, responseJson["setColor"])
+                
+                    
+            
+            self.setLoadingProgress.emit(responseJson.get("progress",0))
+        except Exception as e:
+            self.setLoadingMessage.emit("通信异常:" + str(e),Qt.red)
+            self.loadingMessage = "通信异常:" + str(e)
+            self.loadingMessageColor = Qt.red
+            print("通信异常:" + str(e) + "\n")
+        
+        print(postData, "\n")
+        self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,data=postData,timeout=10,delay = 1)
+        self.communicateWithRobClassesServerThread.resultSignal.connect(self.dealTheMessage)
+        threadPool.start(self.communicateWithRobClassesServerThread)
 
     def setUiClass(self, uiClass:type):
         self.uiClass = uiClass
@@ -1015,17 +1096,20 @@ def login(self,returnFunction:type = None):
 #多线程get请求的通用方法（传入URL和回调函数，自动处理异常和结果回调）
 class GetRequestThread(QRunnable):
     global session
-    def __init__(self, url:str = "",params:dict = {},timeout:int = 5):
+    def __init__(self, url:str = "",params:dict = {},timeout:int = 5,delay:int = 0):
         super().__init__()
         self.url = url
         self.params = params
         self.timeout = timeout
+        self.delay = delay
         self.threadPoolSignals = threadPoolSignals()  # 定义一个信号，传递请求结果（成功与否和消息）
         self.resultSignal = self.threadPoolSignals.signal_int_str_resopnse  # 定义一个信号，传递请求结果（成功与否和消息）
 
     @Slot()
     def run(self):
         try:
+            if self.delay > 0:
+                time_sleep(self.delay)
             response = session.get(self.url, params=self.params, timeout=self.timeout)
             self.resultSignal.emit(1, "",response)
         except Exception as e:
@@ -1035,27 +1119,30 @@ class GetRequestThread(QRunnable):
 #多线程post请求的通用方法（传入URL、数据和回调函数，自动处理异常和结果回调）
 class PostRequestThread(QRunnable):
     global session
-    def __init__(self, url:str = "", data:dict = None,timeout:int = 5):
+    def __init__(self, url:str = "", data:dict = None,timeout:int = 5,delay:int = 0):
         super().__init__()
         self.url = url
         self.data = data
         self.timeout = timeout
+        self.delay = delay
         self.threadPoolSignals = threadPoolSignals()  # 定义一个信号，传递请求结果（成功与否和消息）
         self.resultSignal = self.threadPoolSignals.signal_int_str_resopnse  # 定义一个信号，传递请求结果（成功与否和消息）
 
     @Slot()
     def run(self):
         try:
+            if self.delay > 0:
+                time_sleep(self.delay)
             response = session.post(self.url, data=self.data, timeout=self.timeout)
             self.resultSignal.emit(1, "",response)
         except Exception as e:
             #self.resultSignal.emit(0, "网络异常:" + str(e),None)
             self.resultSignal.emit(0, "网络异常:请检查网络连接或稍后再试",None)
 
-class connectRobClassesServer(QThread):
-    resultSignal = Signal(bool, str)  # 定义一个信号，传递请求结果（成功与否和消息）
+class connectRobClassesServer(QRunnable):
     def __init__(self, parent:type = None):
         super().__init__(parent)
+        self.resultSignal = threadPoolSignals().signal_int_str_resopnse  # 定义一个信号，传递请求结果（成功与否和消息）
     
     def run(self):
         global session, userId, userpwd
