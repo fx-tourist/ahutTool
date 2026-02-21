@@ -30,6 +30,13 @@
     <number>0</number>
    </property>
    <item>
+    <widget class="QLabel" name="messageShow">
+     <property name="text">
+      <string>some message here</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QScrollArea" name="optionsContentArea">
      <property name="widgetResizable">
       <bool>true</bool>
@@ -40,7 +47,7 @@
         <x>0</x>
         <y>0</y>
         <width>564</width>
-        <height>567</height>
+        <height>551</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -60,7 +67,7 @@
         <number>0</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
+        <layout class="QVBoxLayout" name="content">
          <property name="spacing">
           <number>0</number>
          </property>

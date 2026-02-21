@@ -14,9 +14,6 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
-   <property name="spacing">
-    <number>0</number>
-   </property>
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -30,14 +27,17 @@
     <number>0</number>
    </property>
    <item>
+    <widget class="QLabel" name="messageShow">
+     <property name="text">
+      <string>Some message here</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QLabel" name="messageShow">
-       <property name="text">
-        <string>Some message here</string>
-       </property>
-      </widget>
-     </item>
      <item>
       <widget class="QScrollArea" name="scrollArea">
        <property name="widgetResizable">
@@ -49,8 +49,14 @@
           <x>0</x>
           <y>0</y>
           <width>575</width>
-          <height>603</height>
+          <height>568</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <property name="spacing">
@@ -71,23 +77,23 @@
          <item>
           <layout class="QFormLayout" name="content"/>
          </item>
-         <item>
-          <widget class="QPushButton" name="submit">
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>提交</string>
-           </property>
-          </widget>
-         </item>
         </layout>
        </widget>
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="submit">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>提交</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
