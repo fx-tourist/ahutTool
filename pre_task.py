@@ -24,4 +24,4 @@ for file in os.listdir(path_src):
         os.system(command)
 
 os.system("taskkill /im WindowsTerminal.exe /f")
-os.system("cmd /c start python D:/Desktop/games/tools/post/post.py")
+os.system("cmd /c start python D:/Desktop/games/tools/post/main.py")

@@ -3,8 +3,8 @@ import sys
 import requests
 from PySide6.QtGui import QPalette,QStandardItemModel,QStandardItem,QMovie
 from PySide6.QtCore import Qt, Signal,QDate, QRunnable, QThreadPool,Slot,QObject
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog,QLabel,QLineEdit,QFormLayout
-from PySide6.QtGui import QPixmap,QIcon
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog,QLabel,QLineEdit,QSizePolicy,QComboBox
+from PySide6.QtGui import QPixmap,QIcon,QFont
 from urllib import parse
 import base64 
 from bs4 import BeautifulSoup
@@ -20,8 +20,7 @@ from ui_py.ui_classSchedule import Ui_classSchedule
 from ui_py.ui_appInfo import Ui_appInfo
 from ui_py.ui_loading import Ui_loading
 from ui_py.ui_robClasses import Ui_robClasses
-from ui_py.ui_fillForm import Ui_fillForm
-from ui_py.ui_selectAOption import Ui_selectAOption
+from ui_py.ui_custom import Ui_custom
 #导入资源文件
 from img_py.img_icon import *
 #配置
@@ -36,7 +35,7 @@ examListSuf1 = "xsks/xsksap_list"
 examListSuf2 = "xsks/xsstk_list"
 printListSuf = "view/cjgl/zzdy_list.jsp"
 classScheduleUrlSuf = "framework/main_index_loadkb.jsp"
-appInfoMessageUrl = "http://127.0.0.1:9999/"
+appInfoMessageUrl = "https://mc.fx-home.cloudns.be/appInfo"
 robClassesUrl = "http://127.0.0.1:9999/robclasses"
 session = requests.Session()
 session.headers.update({"X-Requested-With" : "XMLHttpRequest"})
@@ -69,7 +68,7 @@ class Main(QWidget):
         super().__init__(parent)
         self.ui = Ui_main()
         self.ui.setupUi(self)
-        self.setWindowTitle("Ahut Tool 2.0")
+        self.setWindowTitle("Ahut Tool " + appVersion)
         self.setWindowIcon(QIcon(":/icon/icon_256.svg"))
         #加载所有子ui
         self.subWidget = QStackedWidget(self)
@@ -82,8 +81,7 @@ class Main(QWidget):
         self.ui_appInfo_widget = Ui_appInfo_widget()
         self.ui_loading_widget = Ui_loading_widget()
         self.ui_robClasses_widget = Ui_robClasses_widget()
-        self.ui_fillForm_widget = Ui_fillForm_widget()
-        self.ui_selectAOption_widget = Ui_selectAOption_widget()
+        self.ui_custom_widget =  Ui_custom_widget()
         self.subWidget.addWidget(self.ui_login_widget)
         self.subWidget.addWidget(self.ui_userInfo_widget)
         self.subWidget.addWidget(self.ui_selfPrint_widget)
@@ -92,8 +90,7 @@ class Main(QWidget):
         self.subWidget.addWidget(self.ui_appInfo_widget)
         self.subWidget.addWidget(self.ui_loading_widget)
         self.subWidget.addWidget(self.ui_robClasses_widget)
-        self.subWidget.addWidget(self.ui_fillForm_widget)
-        self.subWidget.addWidget(self.ui_selectAOption_widget)
+        self.subWidget.addWidget(self.ui_custom_widget)
         #连接登录成功信号
         self.ui_login_widget.loginSuccess.connect(lambda state,message:self.on_login_result(state,message))
         #登录失效信号
@@ -105,8 +102,9 @@ class Main(QWidget):
         self.ui_robClasses_widget.setLoadingMessage.connect(self.setLoadingMessage)
         self.ui_robClasses_widget.setUi.connect(self.showUi)
         self.ui_robClasses_widget.setSelfUiName(self.ui_robClasses_widget)
-        self.ui_robClasses_widget.setFillForm.connect(self.setForm)
-        self.ui_robClasses_widget.setSelectaOption.connect(self.setSelectAOption)
+        self.ui_robClasses_widget.setUi.connect(self.enable_Ui_custom_widget)
+        self.ui_robClasses_widget.setCustomUi.connect(self.setCustomUi)
+        self.ui_robClasses_widget.refresh.connect(self.customRefresh)
 
         #绑定工具栏的按钮事件
         self.ui.userInfo_button.clicked.connect(lambda :self.enable_Ui_userInfo_widget())
@@ -115,12 +113,12 @@ class Main(QWidget):
         self.ui.classSchedule_button.clicked.connect(lambda :self.enable_Ui_classSchedule_widget())
         self.ui.appInfo_button.clicked.connect(lambda :self.enable_Ui_appInfo_widget())
         self.ui.robClasses_button.clicked.connect(lambda :self.enable_Ui_robClasses_widget())
-    
-    def setForm(self,formData:dict):
-        self.ui_fillForm_widget.setForm(formData)
 
-    def setSelectAOption(self,data:dict):
-        self.ui_selectAOption_widget.setBtns(data)
+    def customRefresh(self):
+        self.ui_custom_widget.refresh()
+
+    def setCustomUi(self,data:dict):
+        self.ui_custom_widget.setUi(data)
 
     def setLoadingMessage(self,message:str,color:Qt.GlobalColor):
         self.ui_loading_widget.setMessageShow(message,color)
@@ -198,7 +196,7 @@ class Main(QWidget):
         else:
             self.loginExpired("你还没有登录哦~")
             return
-        self.subWidget.setCurrentWidget(self.ui_robClasses_widget)
+        self.ui_robClasses_widget.serviceInit()
 
     #显示填报表单
     def enable_Ui_fillForm_widget(self):
@@ -209,6 +207,11 @@ class Main(QWidget):
     def enable_Ui_selectAOption_widget(self):
         print("打开选择单项选项界面\n")
         self.subWidget.setCurrentWidget(self.ui_selectAOption_widget)
+
+    #显示自定义界面
+    def enable_Ui_custom_widget(self):
+        print("打开自定义界面\n")
+        self.subWidget.setCurrentWidget(self.ui_custom_widget)
 
     def closeEvent(self, event):
         print("主界面关闭事件被触发,正在保存数据\n")
@@ -777,7 +780,7 @@ class Ui_classSchedule_widget(QWidget):
             self.setMessageShow("已经有一个查询任务了，请稍后再试",color=Qt.red)
             print("已经有一个查询任务了，请稍后再试\n")
             return
-        self.getClassScheduleThreading = PostRequestThread(parse.urljoin(baseUrl, classScheduleUrlSuf),data = {"rq" : selectDate})
+        self.getClassScheduleThreading = PostRequestThread(parse.urljoin(baseUrl, classScheduleUrlSuf),text = {"rq" : selectDate})
         self.getClassScheduleThreading.resultSignal.connect(self.fillClassSchedule)
         threadPool.start(self.getClassScheduleThreading)
         self.getClassScheduleThreadingIsRunning = True
@@ -792,6 +795,7 @@ class Ui_classSchedule_widget(QWidget):
                 print(message + "\n")
                 return
             soup = BeautifulSoup(response.text.replace("\r","").replace("\n","").replace("\t","").replace("<br>","\n").replace("</br>","\n").replace("<br/>","\n"), "lxml")
+            print(response.text)
             items = soup.find_all("tr")
             colCnt = len(items[0].find_all("th"))
             self.tableModel.setColumnCount(colCnt)
@@ -937,9 +941,9 @@ class Ui_robClasses_widget(QWidget):
     setLoadingProgress = Signal(int)
     setLoadingMessage = Signal(str,Qt.GlobalColor)
     returnUi = Signal(QWidget)
-    setFillForm = Signal(dict)
     setUi = Signal(str)
-    setSelectaOption = Signal(dict)
+    setCustomUi = Signal(dict)
+    refresh = Signal()
 
     def __init__(self, parent:type = None):
         super().__init__(parent)
@@ -950,15 +954,16 @@ class Ui_robClasses_widget(QWidget):
         self.loadingMessage = ""
         self.communicateWithRobClassesServerThreadisRunning = False
         self.haveInit = 0
+        self.postData = None
     
     def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
         self.setLoadingMessage.emit(message,color)
     
     def setSelfUiName(self, name:QWidget):
         self.SelfUiName = name
-
-    def showEvent(self, event):
-        super().showEvent(event)
+    
+    def serviceInit(self):
+        self.dealTheMessageCanRun = True
         print("显示抢课界面\n")
         self.setLoadingProgress.emit(self.initPregress)
         self.showLoding.emit()
@@ -966,11 +971,15 @@ class Ui_robClasses_widget(QWidget):
         self.loadingMessage = "正在连接服务器..."
         self.loadingMessageColor = Qt.darkYellow
         
-        postdata = {"aim":"connect"}
-        self.connectRobClassesServerThread = PostRequestThread(robClassesUrl,data=postdata,timeout=10)
+        if not self.postData:
+            self.postData = {"aim":"connect"}
+        else:
+            self.postData["aim"] = "reconnect"
+        self.connectRobClassesServerThread = PostRequestThread(robClassesUrl,data=self.postData,timeout=10)
         self.connectRobClassesServerThread.resultSignal.connect(self.dealTheMessage)
         threadPool.start(self.connectRobClassesServerThread)
-
+        print(f"连接服务器{robClassesUrl},data={self.postData}\n")       
+    
     def connectRobClassesServerResult(self,state:bool,message:str):
         if not state:
             self.setLoadingMessage.emit(message,Qt.red)
@@ -991,16 +1000,19 @@ class Ui_robClasses_widget(QWidget):
     
     def dealTheMessage(self,state:bool,message:str,response:requests.Response):
         try:
-            postData = {}
+            self.refresh.emit()
             if not state:
                 self.setLoadingMessage.emit(message,Qt.red)
                 self.loadingMessage = message
                 self.loadingMessageColor = Qt.red
+                print("服务器数据:")
                 print(message + "\n")
             else:
                 self.lastResponseContent = response.text
+                print("服务器数据:")
                 print(response.text)
                 responseJson = json.loads(response.text)
+                self.postData = responseJson.get("postData",{})
                 op = responseJson.get("op",None)
                 if op == None:
                     self.setLoadingMessage.emit("通信异常:返回数据格式错误",Qt.red)
@@ -1008,30 +1020,32 @@ class Ui_robClasses_widget(QWidget):
                     return
                 if op == 0:
                     self.setLoadingMessage.emit("等待服务器下发数据...",Qt.darkYellow)
-                    print("等待服务器下发数据...\n")
-                if op == 1:
-                    postData["postVal"] = []
-                    self.getVals = responseJson.get("getVals",None)
-                    if self.getVals != None:
-                        for getVal in self.getVals:
-                            postData["postVal"].append(globals().get(getVal,None))
-                            print(f"发送给服务器的数据{getVal} = {globals().get(getVal,None)}\n")
-  
-                    self.saveVals = responseJson.get("saveVals",None)
-                    if self.saveVals != None:
-                        for key,val in self.saveVals.items():
-                            globals()[key] = val
-                        print(f"收到服务器的数据{key} = {val}\n")
-
                     if responseJson.get("setMessage",None) != None:
                         self.setLoadingMessage.emit(responseJson["setMessage"], getattr(Qt, responseJson["setColor"]))
                         self.loadingMessage = responseJson["setMessage"]
                         self.loadingMessageColor = getattr(Qt, responseJson["setColor"])
                 
+                if op == 1:
+                    self.getVals = responseJson.get("getVals",None)
+                    if self.getVals != None:
+                        self.postData["postVal"] = {}
+                        for getVal in self.getVals:
+                            self.postData["postVal"][getVal] = globals().get(getVal,None)
+                            #print(f"发送给服务器的数据{getVal} = {globals().get(getVal,None)}\n")
+  
+                    self.saveVals = responseJson.get("saveVals",None)
+                    if self.saveVals != None:
+                        for key,val in self.saveVals.items():
+                            globals()[key] = val
+                            print(f"收到服务器的数据{key} = {val}\n")
+
                     if responseJson.get("setFillForm",None) != None:
                         self.setFillForm.emit(responseJson["setFillForm"])
                     if responseJson.get("setSelectAOption",None) != None:
                         self.setSelectaOption.emit(responseJson["setSelectAOption"])
+
+                    if responseJson.get("setCustomUi",None) != None:
+                        self.setCustomUi.emit(responseJson["setCustomUi"])
 
                     if responseJson.get("setUi",None) != None:
                         print("服务器命令:setUi=" + responseJson["setUi"],"\n")
@@ -1040,156 +1054,126 @@ class Ui_robClasses_widget(QWidget):
                     print(f"通信{robClassesUrl}结束\n")
                     self.communicateWithRobClassesServerThreadisRunning = False
                     return
+                
+                if responseJson.get("setMessage",None) != None:
+                    self.setLoadingMessage.emit(responseJson["setMessage"], getattr(Qt, responseJson["setColor"]))
+                    self.loadingMessage = responseJson["setMessage"]
+                    self.loadingMessageColor = getattr(Qt, responseJson["setColor"])
+                
         except Exception as e:
-            self.setLoadingMessage.emit("通信异常:" + str(e),Qt.red)
+            self.setLoadingMessage.emit("通信异常:可能服务器暂未开放服务",Qt.red)
             self.loadingMessage = "通信异常:" + str(e)
             self.loadingMessageColor = Qt.red
             print("通信异常:" + str(e) + "\n")
         
+
         if self.communicateWithRobClassesServerThreadisRunning == False:
-            print(postData, "\n")
-            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,data=postData,timeout=10,delay = 1)
+            print("客户端发送数据：")
+            print(self.postData, "\n")
+            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,data=self.postData,timeout=10,delay = 1)
             self.communicateWithRobClassesServerThread.resultSignal.connect(self.communicateWithRobClassesServerThreadFinished)
             threadPool.start(self.communicateWithRobClassesServerThread)
             self.communicateWithRobClassesServerThreadisRunning = True
 
     def communicateWithRobClassesServerThreadFinished(self,state:bool,message:str,response:requests.Response):
         self.communicateWithRobClassesServerThreadisRunning = False
-        self.dealTheMessage(state,message,response)
+        if self.dealTheMessageCanRun:
+            self.dealTheMessage(state,message,response)
 
-#表单填写界面
-class Ui_fillForm_widget(QWidget):
+#自定义界面
+class Ui_custom_widget(QWidget):
     def __init__(self, parent:type = None):
         super().__init__(parent)
-        self.ui_fillForm = Ui_fillForm()
-        self.ui_fillForm.setupUi(self)
-        self.postThreadisRunning = False
-        self.ui_fillForm.submit.clicked.connect(self.submitForm)
+        self.ui_custom = Ui_custom()
+        self.ui_custom.setupUi(self)
+        self.buttonClickedThreadisRunning = False
     
-    def setForm(self,form:dict):
+    def refresh(self):
+            self.buttonClickedThreadisRunning = False
+
+    def setUi(self,data:dict):
         try:
-            self.postData = {}
-            while self.ui_fillForm.content.count() > 0:
-                layout_item = self.ui_fillForm.content.takeAt(0)
-                widget = layout_item.widget()
-                if widget:
-                    widget.deleteLater()
-                del layout_item
-
-            for row in reversed(range(self.ui_fillForm.content.rowCount())):
-                self.ui_fillForm.content.removeRow(row)
-
-            items = form.get("main",None)
-            for key,val in items.items():
-                print(f"添加控件:{key}:{val}\n")
-                label = QLabel(key)
-                LineEdit = QLineEdit()
-                LineEdit.textChanged.connect(lambda line,lab = label.text(): self.inputText(lab,line))
-                self.ui_fillForm.content.addRow(label,LineEdit)
-            
-            print(f"content中的控件数量行:{self.ui_fillForm.content.rowCount()}\n")
-            self.postUrl = form.get("postUrl",None)
-            self.postData = form.get("postData",{})
-            self.setMessageShow(form.get("message",""),getattr(Qt, form.get("color","black")))
-        except Exception as e:
-            print("填充表单异常:" + str(e) + "\n")
-            self.setMessageShow("填充表单异常:" + str(e),color=Qt.red)
-    
-    def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
-        paletter = QPalette()
-        paletter.setColor(QPalette.WindowText, color)
-        self.ui_fillForm.messageShow.setPalette(paletter)
-        self.ui_fillForm.messageShow.setText(message)
-    
-    def inputText(self,key:str,val:str):
-        self.postData[key] = val
-        print(f"输入控件:{key}:{val}\n")
-    
-    def submitForm(self):
-        try:
-            if self.postThreadisRunning:
-                self.setMessageShow("请稍后,上一个表单还在提交中...",color=Qt.red)
-                print("请稍后,上一个表单还在提交中...\n")
-            else:
-                self.postThreadisRunning = True
-                self.postThread = PostRequestThread(self.postUrl,data=self.postData,timeout=10)
-                self.postThread.resultSignal.connect(self.postDataFinished)
-                threadPool.start(self.postThread)
-                print("正在提交表单...")
-                self.setMessageShow("正在提交表单...",color=Qt.darkYellow)
-                print(self.postData,end="\n")
-                print(f"目标url:{self.postUrl}\n")
-        except Exception as e:
-            print("提交表单异常:" + str(e) + "\n")
-            self.setMessageShow("提交表单异常:" + str(e),color=Qt.red)
-
-
-    def postDataFinished(self,state:bool,message:str,response:requests.Response):
-        self.postThreadisRunning = False
-        if not state:
-            self.setMessageShow(message,color=Qt.red)
-            print(message + "\n")
-            return
-        print("表单提交成功,等待服务器下发数据...")
-        self.setMessageShow("表单提交成功,等待服务器下发数据...",color=Qt.darkGreen)
-
-#选择选项界面
-class Ui_selectAOption_widget(QWidget):
-    def __init__(self, parent:type = None):
-        super().__init__(parent)
-        self.ui_selectAOption = Ui_selectAOption()
-        self.ui_selectAOption.setupUi(self)
-        self.postDataThreadisRunning = False
-        
-    def setBtns(self,data:dict):
-        try:
+            font = QFont()
+            self.data = data
             self.postData = data.get("postData",{})
-            self.postUrl = data.get("postUrl",None)
-            while self.ui_selectAOption.content.count() > 0:
-                layout_item = self.ui_selectAOption.content.takeAt(0)
+            while self.ui_custom.content.count() > 0:
+                layout_item = self.ui_custom.content.takeAt(0)
                 widget = layout_item.widget()
                 if widget:
                     widget.deleteLater()
                 del layout_item
+            
+            self.setMessageShow(data.get('setMessage',''),data.get('setColor',Qt.red))
+            for row,items in enumerate(data.get("main",[]),start=1):
+                for col,item in enumerate(items,start=1):
+                    elementType = item.get("type","")
+                    element = None
+                    if elementType == "label":
+                        element = QLabel(item.get("text",""))
+                        element.setWordWrap(item.get("wordWrap",True))
+                        element.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                        font.setPointSize(item.get("fontSize",12))
+                        element.setFont(font)
+                    if elementType == "lineEdit":
+                        element = QLineEdit()
+                        font.setPointSize(item.get("fontSize",12))
+                        element.setFont(font)
+                        element.setText(item.get("text",""))
+                        self.postData[item["key"]] = item.get("text","")
+                        element.textChanged.connect(lambda line,key = item["key"]: self.lineEditChanged(key,line))
+                    if elementType == "pushButton":
+                        element = QPushButton(item.get("text",""))
+                        element.clicked.connect(lambda state, btnKey = item["key"],url = item["postUrl"]: self.buttonClicked(btnKey,url))
+                        font.setPointSize(item.get("fontSize",12))
+                        element.setFont(font)
+                    if elementType == "air":
+                        element = QLabel()
+                    if elementType == "comboBox":
+                        element = NoWheelComboBox()
+                        for option in item.get("options",[]):
+                            element.addItem(option)
+                        element.setCurrentText(item.get("text",""))
+                        self.postData[item["key"]] = item.get("text","")
+                        element.currentTextChanged.connect(lambda text,key = item["key"]: self.comboBoxChanged(key,text))
+                    if item.get("width",None):
+                        element.setFixedWidth(item.get("width"))
+                    if item.get("height",None):
+                        element.setFixedHeight(item.get("height"))
+                    if element:self.ui_custom.content.addWidget(element,item.get("row",row),item.get("col",col),item.get("rowSpan",1),item.get("colSpan",1))
 
-            items = data.get("main",None)
-            for item in items:
-                print(f"添加按钮控件:{item}\n")
-                btn = QPushButton(item)
-                self.ui_selectAOption.content.addWidget(btn)
-                btn.clicked.connect(lambda state, btnName = item: self.btnClicked(btnName))
-            print(f"content中的控件数量:{self.ui_selectAOption.content.count()}\n")
+            space  = QSpacerItem(0, 0, QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
+            self.ui_custom.content.addItem(space,self.ui_custom.content.rowCount() + 100,1)
         except Exception as e:
-            print("填充表单异常:" + str(e) + "\n")
-            self.setMessageShow("填充表单异常:" + str(e),color=Qt.red)
+            print("填充自定义界面异常:" + str(e) + "\n")
+            self.setMessageShow("填充自定义界面异常:" + str(e),color=Qt.red)
+            raise
+
+    def comboBoxChanged(self,key:str,text:str):
+        print(f"选择控件:{key}:{text}\n")
+        self.postData[key] = text
+
+    def lineEditChanged(self,key:str,text:str):
+        print(f"输入控件:{key}:{text}\n")
+        self.postData[key] = text
     
-    def btnClicked(self,btnName:str):
-        if self.postDataThreadisRunning:
+    def buttonClicked(self,btnKey:str,postUrl:str):
+        if self.buttonClickedThreadisRunning:
             self.setMessageShow("请稍后,上一个表单还在提交中...",color=Qt.red)
             print("请稍后,上一个表单还在提交中...\n")
         else:
-            self.postData["btnName"] = btnName
-            print(f"用户选择了按钮:{btnName}\n")
-            print(self.postData,end="\n")
-            self.postDataThread = PostRequestThread(self.postUrl,data=self.postData,timeout=10)
-            self.postDataThread.resultSignal.connect(self.postDataFinished)
+            print("等待服务器下发数据...")
+            self.setMessageShow("等待服务器下发数据...",color=Qt.darkGreen)
+            self.postData["btnKey"] = btnKey
+            print(f"按钮{btnKey}被点击了\n向服务器发送数据:\n{self.postData}\n")
+            self.postDataThread = PostRequestThread(postUrl,data=self.postData,timeout=10)
+            self.buttonClickedThreadisRunning = True
             threadPool.start(self.postDataThread)
-            self.postDataThreadisRunning = True
     
-    def postDataFinished(self,state:bool,message:str,response:requests.Response):
-        self.postDataThreadisRunning = False
-        if not state:
-            self.setMessageShow(message,color=Qt.red)
-            print(message + "\n")
-            return
-        print("表单提交成功,等待服务器下发数据...")
-        self.setMessageShow("表单提交成功,等待服务器下发数据...",color=Qt.darkGreen)
-
     def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
         paletter = QPalette()
         paletter.setColor(QPalette.WindowText, color)        
-        self.ui_selectAOption.messageShow.setPalette(paletter)
-        self.ui_selectAOption.messageShow.setText(message)
+        self.ui_custom.messageShow.setPalette(paletter)
+        self.ui_custom.messageShow.setText(message)
 
 #登录线程
 class LoginThread(QRunnable): 
@@ -1282,15 +1266,22 @@ class GetRequestThread(QRunnable):
             #self.resultSignal.emit(0, "网络异常:" + str(e),None)
             self.resultSignal.emit(0, "网络异常:请检查网络连接或稍后再试",None)
 
+class NoWheelComboBox(QComboBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+    def wheelEvent(self, event):
+        pass
+
 #多线程post请求的通用方法（传入URL、数据和回调函数，自动处理异常和结果回调）
 class PostRequestThread(QRunnable):
     global session
-    def __init__(self, url:str = "", data:dict = None,timeout:int = 5,delay:int = 0):
+    def __init__(self, url:str = "", data:dict = None,text:str = "",timeout:int = 5,delay:int = 0):
         super().__init__()
         self.url = url
         self.data = data
         self.timeout = timeout
         self.delay = delay
+        self.text = text
         self.threadPoolSignals = threadPoolSignals()  # 定义一个信号，传递请求结果（成功与否和消息）
         self.resultSignal = self.threadPoolSignals.signal_int_str_resopnse  # 定义一个信号，传递请求结果（成功与否和消息）
 
@@ -1299,7 +1290,7 @@ class PostRequestThread(QRunnable):
         try:
             if self.delay > 0:
                 time_sleep(self.delay)
-            response = session.post(self.url, data=self.data, timeout=self.timeout)
+            response = session.post(self.url, json=self.data,data=self.text, timeout=self.timeout)
             self.resultSignal.emit(1, "",response)
         except Exception as e:
             #self.resultSignal.emit(0, "网络异常:" + str(e),None)
@@ -1332,6 +1323,7 @@ class threadPoolSignals(QObject):
 def restoreAllToolButton(mainWindow):
     for btnName in toolButtonNameList:
         mainWindow.ui.__getattribute__(btnName).setEnabled(True)
+    mainWindow.ui_robClasses_widget.dealTheMessageCanRun = False
 
 if __name__ == "__main__":
     widget = Main()

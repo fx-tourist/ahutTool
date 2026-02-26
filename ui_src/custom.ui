@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>selectAOption</class>
- <widget class="QWidget" name="selectAOption">
+ <class>custom</class>
+ <widget class="QWidget" name="custom">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>566</width>
-    <height>569</height>
+    <width>547</width>
+    <height>560</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,27 +30,20 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QLabel" name="messageShow">
-     <property name="text">
-      <string>some message here</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QScrollArea" name="optionsContentArea">
+    <widget class="QScrollArea" name="scrollArea">
      <property name="widgetResizable">
       <bool>true</bool>
      </property>
-     <widget class="QWidget" name="optionsContent">
+     <widget class="QWidget" name="scrollAreaWidgetContents">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>564</width>
-        <height>551</height>
+        <width>545</width>
+        <height>542</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
        <property name="spacing">
         <number>0</number>
        </property>
@@ -67,14 +60,21 @@
         <number>0</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="content">
+        <layout class="QGridLayout" name="content">
          <property name="spacing">
-          <number>0</number>
+          <number>6</number>
          </property>
         </layout>
        </item>
       </layout>
      </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="messageShow">
+     <property name="text">
+      <string/>
+     </property>
     </widget>
    </item>
   </layout>
