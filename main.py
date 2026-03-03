@@ -1039,6 +1039,9 @@ class Ui_robClasses_widget(QWidget):
                 if responseJson.get("setUi",None) != None:
                     print("服务器命令:setUi=" + responseJson["setUi"],"\n")
                     self.setUi.emit(responseJson["setUi"])
+
+                if responseJson.get("setProgress",None) != None:
+                    self.setLoadingProgress.emit(responseJson["setProgress"])
             if op == 2:
                 print(f"通信{robClassesUrl}结束\n")
                 self.communicateWithRobClassesServerThreadisRunning = False
