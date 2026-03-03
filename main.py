@@ -982,12 +982,7 @@ class Ui_robClasses_widget(QWidget):
 
     def dealTheMessage(self,state:bool,message:str,response:requests.Response):
         self.refresh.emit()
-        try:
-            responseJson = json.loads(switchStr(response.text))
-        except:
-            print("服务器数据解析异常\n")
-            self.setLoadingMessage.emit("无法解析服务器数据，请更新客户端版本",Qt.red)
-            return
+        responseJson = {}
         try:
             if not state:
                 self.setLoadingMessage.emit(message,Qt.red)
@@ -996,58 +991,64 @@ class Ui_robClasses_widget(QWidget):
                 print("服务器数据:")
                 #print(message + "\n")
             else:
-                print("服务器数据:")
-                #print(responseJson)
-                self.postData = responseJson.get("postData","{}")
-                op = responseJson.get("op",None)    
-                if op == None:
-                    self.setLoadingMessage.emit("通信异常:返回数据格式错误",Qt.red)
-                    print("通信异常:返回数据格式错误\n")
-                    return
-                if op == 0:
-                    self.setLoadingMessage.emit("等待服务器下发数据...",Qt.darkYellow)
-                    if responseJson.get("setMessage",None) != None:
-                        self.setLoadingMessage.emit(responseJson["setMessage"], getattr(Qt, responseJson["setColor"]))
-                        self.loadingMessage = responseJson["setMessage"]
-                        self.loadingMessageColor = getattr(Qt, responseJson["setColor"])
-                
-                if op == 1:
-                    self.getVals = responseJson.get("getVals",None)
-                    if self.getVals != None:
-                        self.postData["postVal"] = {}
-                        for getVal in self.getVals:
-                            if getVal == "cookies":
-                                self.postData["postVal"][getVal] = session.cookies.get_dict()
-                            else:
-                                self.postData["postVal"][getVal] = globals().get(getVal,None)
-  
-                    self.saveVals = responseJson.get("saveVals",None)
-                    if self.saveVals != None:
-                        for key,val in self.saveVals.items():
-                            globals()[key] = val
-                            print(f"收到服务器的数据{key} = {val}\n")
-
-                    if responseJson.get("setFillForm",None) != None:
-                        self.setFillForm.emit(responseJson["setFillForm"])
-                    if responseJson.get("setSelectAOption",None) != None:
-                        self.setSelectaOption.emit(responseJson["setSelectAOption"])
-
-                    if responseJson.get("setCustomUi",None) != None:
-                        self.setCustomUi.emit(responseJson["setCustomUi"])
-
-                    if responseJson.get("setUi",None) != None:
-                        print("服务器命令:setUi=" + responseJson["setUi"],"\n")
-                        self.setUi.emit(responseJson["setUi"])
-                if op == 2:
-                    print(f"通信{robClassesUrl}结束\n")
-                    self.communicateWithRobClassesServerThreadisRunning = False
-                    return
-                
+                responseJson = json.loads(switchStr(response.text))
+        except:
+            print("服务器数据解析异常\n")
+            self.setLoadingMessage.emit("无法解析服务器数据，请更新客户端版本",Qt.red)
+            return
+        try:
+            print("服务器数据:")
+            #print(responseJson)
+            self.postData = responseJson.get("postData","{}")
+            op = responseJson.get("op",None)    
+            if op == None:
+                self.setLoadingMessage.emit("通信异常:返回数据格式错误",Qt.red)
+                print("通信异常:返回数据格式错误\n")
+                return
+            if op == 0:
+                self.setLoadingMessage.emit("等待服务器下发数据...",Qt.darkYellow)
                 if responseJson.get("setMessage",None) != None:
                     self.setLoadingMessage.emit(responseJson["setMessage"], getattr(Qt, responseJson["setColor"]))
                     self.loadingMessage = responseJson["setMessage"]
                     self.loadingMessageColor = getattr(Qt, responseJson["setColor"])
-                
+            
+            if op == 1:
+                self.getVals = responseJson.get("getVals",None)
+                if self.getVals != None:
+                    self.postData["postVal"] = {}
+                    for getVal in self.getVals:
+                        if getVal == "cookies":
+                            self.postData["postVal"][getVal] = session.cookies.get_dict()
+                        else:
+                            self.postData["postVal"][getVal] = globals().get(getVal,None)
+
+                self.saveVals = responseJson.get("saveVals",None)
+                if self.saveVals != None:
+                    for key,val in self.saveVals.items():
+                        globals()[key] = val
+                        print(f"收到服务器的数据{key} = {val}\n")
+
+                if responseJson.get("setFillForm",None) != None:
+                    self.setFillForm.emit(responseJson["setFillForm"])
+                if responseJson.get("setSelectAOption",None) != None:
+                    self.setSelectaOption.emit(responseJson["setSelectAOption"])
+
+                if responseJson.get("setCustomUi",None) != None:
+                    self.setCustomUi.emit(responseJson["setCustomUi"])
+
+                if responseJson.get("setUi",None) != None:
+                    print("服务器命令:setUi=" + responseJson["setUi"],"\n")
+                    self.setUi.emit(responseJson["setUi"])
+            if op == 2:
+                print(f"通信{robClassesUrl}结束\n")
+                self.communicateWithRobClassesServerThreadisRunning = False
+                return
+            
+            if responseJson.get("setMessage",None) != None:
+                self.setLoadingMessage.emit(responseJson["setMessage"], getattr(Qt, responseJson["setColor"]))
+                self.loadingMessage = responseJson["setMessage"]
+                self.loadingMessageColor = getattr(Qt, responseJson["setColor"])
+            
         except Exception as e:
             self.setLoadingMessage.emit("通信异常:可能服务器暂未开放服务",Qt.red)
             self.loadingMessage = "通信异常:" + str(e)
@@ -1060,7 +1061,7 @@ class Ui_robClasses_widget(QWidget):
             print("客户端发送数据：")
             encryption = switchStr(json.dumps(self.postData))
             print(f"{json.dumps(self.postData)}", "\n")
-            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,text=encryption,timeout=10,delay = 1)
+            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,text=encryption,timeout=10,delay = 0.5)
             self.communicateWithRobClassesServerThread.resultSignal.connect(self.communicateWithRobClassesServerThreadFinished)
             threadPool.start(self.communicateWithRobClassesServerThread)
             self.communicateWithRobClassesServerThreadisRunning = True
