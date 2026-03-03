@@ -974,7 +974,7 @@ class Ui_robClasses_widget(QWidget):
         if not self.postData:
             self.postData = {"aim":"connect","appVersionInt" : appVersionInt}
         else:
-            self.postData = {"aim":"reconnect","appVersionInt" : appVersionInt}
+            self.postData.update({"aim":"reconnect","appVersionInt" : appVersionInt})
         self.connectRobClassesServerThread = PostRequestThread(robClassesUrl,text=switchStr(json.dumps(self.postData)),timeout=10)
         self.connectRobClassesServerThread.resultSignal.connect(self.dealTheMessage)
         threadPool.start(self.connectRobClassesServerThread)
