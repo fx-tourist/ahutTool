@@ -393,7 +393,6 @@ class Ui_userInfo_widget(QWidget):
         if not logined:
             self.loginExpired(False, "你还没有登录哦~")
             return
-        login(self, self.loginExpired)
         print("Ui_userInfo_widget显示事件被触发\n")
         #获取当前学期
         if semester == "":
