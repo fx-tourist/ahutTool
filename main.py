@@ -36,7 +36,7 @@ examListSuf2 = "xsks/xsstk_list"
 printListSuf = "view/cjgl/zzdy_list.jsp"
 classScheduleUrlSuf = "framework/main_index_loadkb.jsp"
 appInfoMessageUrl = "https://mc.fx-home.cloudns.be/appInfo"
-robClassesUrl = "https://mc.fx-home.cloudns.be/robclasses"
+robClassesUrl = "https://web.fx-home.cloudns.be/robClasses"
 session = requests.Session()
 session.headers.update({"X-Requested-With" : "XMLHttpRequest"})
 toolButtonNameList = ["userInfo_button",
@@ -55,8 +55,8 @@ userClass = ""
 userAvatar = None
 semester = ""
 currDate = QDate.currentDate().toString("yyyy-MM-dd")
-appVersion = "2.1"
-appVersionInt = 21
+appVersion = "2.2"
+appVersionInt = 22
 appDataDes = os.path.join(os.getenv("APPDATA"),"ahutTool")
 loginOptionsData = {}
 app = QApplication(sys.argv)
@@ -953,7 +953,7 @@ class Ui_robClasses_widget(QWidget):
         self.loadingMessage = ""
         self.communicateWithRobClassesServerThreadisRunning = False
         self.haveInit = 0
-        self.postData = None
+        self.postData = {}
     
     def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
         self.setLoadingMessage.emit(message,color)
@@ -971,13 +971,16 @@ class Ui_robClasses_widget(QWidget):
         self.loadingMessageColor = Qt.darkYellow
         
         if not self.postData:
-            self.postData = {"aim":"connect","appVersionInt" : appVersionInt}
+            self.postData = {"aim":"connect","appVersionInt" : appVersionInt,"userId":userId,"userPwd":userpwd,
+                             "cookies":session.cookies.get_dict()}
         else:
+            if type(self.postData) == str:
+                self.postData = {}
             self.postData.update({"aim":"reconnect","appVersionInt" : appVersionInt})
         self.connectRobClassesServerThread = PostRequestThread(robClassesUrl,text=switchStr(json.dumps(self.postData)),timeout=10)
         self.connectRobClassesServerThread.resultSignal.connect(self.dealTheMessage)
         threadPool.start(self.connectRobClassesServerThread)
-        #print(f"连接服务器{robClassesUrl},data={self.postData}\n")       
+        print(f"连接服务器{robClassesUrl},data={self.postData}\n")       
 
     def dealTheMessage(self,state:bool,message:str,response:requests.Response):
         self.refresh.emit()
@@ -988,16 +991,17 @@ class Ui_robClasses_widget(QWidget):
                 self.loadingMessage = message
                 self.loadingMessageColor = Qt.red
                 print("服务器数据:")
-                #print(message + "\n")
+                print(message + "\n")
             else:
                 responseJson = json.loads(switchStr(response.text))
         except:
+            print(response.text)
             print("服务器数据解析异常\n")
             self.setLoadingMessage.emit("无法解析服务器数据，请更新客户端版本",Qt.red)
             return
         try:
             print("服务器数据:")
-            #print(responseJson)
+            print(responseJson)
             self.postData = responseJson.get("postData","{}")
             op = responseJson.get("op",None)    
             if op == None:
@@ -1063,7 +1067,7 @@ class Ui_robClasses_widget(QWidget):
             print("客户端发送数据：")
             encryption = switchStr(json.dumps(self.postData))
             print(f"{json.dumps(self.postData)}", "\n")
-            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,text=encryption,timeout=10,delay = 0.5)
+            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,text=encryption,timeout=10,delay = 0)
             self.communicateWithRobClassesServerThread.resultSignal.connect(self.communicateWithRobClassesServerThreadFinished)
             threadPool.start(self.communicateWithRobClassesServerThread)
             self.communicateWithRobClassesServerThreadisRunning = True
@@ -1157,7 +1161,7 @@ class Ui_custom_widget(QWidget):
             print("等待服务器下发数据...")
             self.setMessageShow("等待服务器下发数据...",color=Qt.darkGreen)
             self.postData["btnKey"] = btnKey
-            print(f"按钮{btnKey}被点击了\n向服务器发送数据:\n{self.postData}\n")
+            print(f"按钮{btnKey}被点击了\n向服务器发送数据:\n{self.postData}\n{postUrl}\n")
             encryption = switchStr(json.dumps(self.postData))
             self.postDataThread = PostRequestThread(postUrl,text=encryption,timeout=10)
             self.buttonClickedThreadisRunning = True
@@ -1278,7 +1282,7 @@ class PostRequestThread(QRunnable):
     def __init__(self, url:str = "", data:dict = None,text:str = "",timeout:int = 5,delay:int = 0):
         super().__init__()
         self.url = url
-        self.data = data
+        self.data = data 
         self.timeout = timeout
         self.delay = delay
         self.text = text
