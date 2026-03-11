@@ -1067,7 +1067,7 @@ class Ui_robClasses_widget(QWidget):
             print("客户端发送数据：")
             encryption = switchStr(json.dumps(self.postData))
             print(f"{json.dumps(self.postData)}", "\n")
-            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,text=encryption,timeout=10,delay = 0)
+            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,text=encryption,timeout=10,delay = 1)
             self.communicateWithRobClassesServerThread.resultSignal.connect(self.communicateWithRobClassesServerThreadFinished)
             threadPool.start(self.communicateWithRobClassesServerThread)
             self.communicateWithRobClassesServerThreadisRunning = True
@@ -1120,7 +1120,7 @@ class Ui_custom_widget(QWidget):
                         element.textChanged.connect(lambda line,key = item["key"]: self.lineEditChanged(key,line))
                     if elementType == "pushButton":
                         element = QPushButton(item.get("text",""))
-                        element.clicked.connect(lambda state, btnKey = item["key"],url = item["postUrl"]: self.buttonClicked(btnKey,url))
+                        element.clicked.connect(lambda state, btnKey = item["key"],url = item["postUrl"],val = item.get("val",""): self.buttonClicked(btnKey,url,val))
                         font.setPointSize(item.get("fontSize",12))
                         element.setFont(font)
                     if elementType == "air":
@@ -1130,6 +1130,7 @@ class Ui_custom_widget(QWidget):
                         for option in item.get("options",[]):
                             element.addItem(option)
                         element.setCurrentText(item.get("text",""))
+                        element.setEditable(item.get("editable",False))
                         self.postData[item["key"]] = item.get("text","")
                         element.currentTextChanged.connect(lambda text,key = item["key"]: self.comboBoxChanged(key,text))
                     if item.get("width",None):
@@ -1153,7 +1154,7 @@ class Ui_custom_widget(QWidget):
         print(f"输入控件:{key}:{text}\n")
         self.postData[key] = text
     
-    def buttonClicked(self,btnKey:str,postUrl:str):
+    def buttonClicked(self,btnKey:str,postUrl:str,val:str = ""):
         if self.buttonClickedThreadisRunning:
             self.setMessageShow("请稍后,上一个表单还在提交中...",color=Qt.red)
             print("请稍后,上一个表单还在提交中...\n")
@@ -1161,6 +1162,7 @@ class Ui_custom_widget(QWidget):
             print("等待服务器下发数据...")
             self.setMessageShow("等待服务器下发数据...",color=Qt.darkGreen)
             self.postData["btnKey"] = btnKey
+            self.postData["val"] = val
             print(f"按钮{btnKey}被点击了\n向服务器发送数据:\n{self.postData}\n{postUrl}\n")
             encryption = switchStr(json.dumps(self.postData))
             self.postDataThread = PostRequestThread(postUrl,text=encryption,timeout=10)
