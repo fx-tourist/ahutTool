@@ -36,7 +36,7 @@ examListSuf2 = "xsks/xsstk_list"
 printListSuf = "view/cjgl/zzdy_list.jsp"
 classScheduleUrlSuf = "framework/main_index_loadkb.jsp"
 appInfoMessageUrl = "https://mc.fx-home.cloudns.be/appInfo"
-robClassesUrl = "https://web.fx-home.cloudns.be/robClasses"
+robClassesUrl = "https://www.fx-home.cloudns.be/robClasses"
 session = requests.Session()
 session.headers.update({"X-Requested-With" : "XMLHttpRequest"})
 toolButtonNameList = ["userInfo_button",
