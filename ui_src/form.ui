@@ -51,7 +51,7 @@
      <property name="widgetResizable">
       <bool>true</bool>
      </property>
-     <widget class="QWidget" name="scrollAreaWidgetContents">
+     <widget class="QWidget" name="buttonContent">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -138,7 +138,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="robClasses_button">
+        <widget class="QPushButton" name="downloadModule_button">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -152,7 +152,7 @@
           </size>
          </property>
          <property name="text">
-          <string>抢课助手</string>
+          <string>下载扩展</string>
          </property>
         </widget>
        </item>
@@ -174,19 +174,6 @@
           <string>关于</string>
          </property>
         </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Orientation::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </widget>

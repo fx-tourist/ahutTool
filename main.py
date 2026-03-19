@@ -1,12 +1,15 @@
 # This Python file uses the following encoding: utf-8
 import sys
 import requests
-from PySide6.QtGui import QPalette,QStandardItemModel,QStandardItem,QMovie
+from PySide6.QtGui import QPalette,QStandardItemModel,QStandardItem
 from PySide6.QtCore import Qt, Signal,QDate, QRunnable, QThreadPool,Slot,QObject
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QStackedWidget,QSpacerItem,QFileDialog,QLabel,QLineEdit,QSizePolicy,QComboBox
 from PySide6.QtGui import QPixmap,QIcon,QFont
 from urllib import parse
-import base64 
+import pathlib
+import base64
+import subprocess
+import copy
 from bs4 import BeautifulSoup
 import os,json
 from time import sleep as time_sleep
@@ -18,9 +21,7 @@ from ui_py.ui_selfPrint import Ui_selfPrint
 from ui_py.ui_examSearch import Ui_examSearch
 from ui_py.ui_classSchedule import Ui_classSchedule
 from ui_py.ui_appInfo import Ui_appInfo
-from ui_py.ui_loading import Ui_loading
-from ui_py.ui_robClasses import Ui_robClasses
-from ui_py.ui_custom import Ui_custom
+from ui_py.ui_module import Ui_module
 #导入资源文件
 from img_py.img_icon import *
 #配置
@@ -36,17 +37,15 @@ examListSuf2 = "xsks/xsstk_list"
 printListSuf = "view/cjgl/zzdy_list.jsp"
 classScheduleUrlSuf = "framework/main_index_loadkb.jsp"
 appInfoMessageUrl = "https://mc.fx-home.cloudns.be/appInfo"
-robClassesUrl = "https://www.fx-home.cloudns.be/robClasses"
 session = requests.Session()
 session.headers.update({"X-Requested-With" : "XMLHttpRequest"})
 toolButtonNameList = ["userInfo_button",
                       "selfPrint_button",
                       "examSearch_button",
                       "classSchedule_button",
-                      "robClasses_button",
                       "appInfo_button"]
 userId = ""
-userpwd = ""
+userPwd = ""
 logined = False
 userName = ""
 userDepartment = ""
@@ -57,7 +56,8 @@ semester = ""
 currDate = QDate.currentDate().toString("yyyy-MM-dd")
 appVersion = "2.2"
 appVersionInt = 22
-appDataDes = os.path.join(os.getenv("APPDATA"),"ahutTool")
+appDataDes = pathlib.Path(os.getenv("APPDATA")) / "ahutTool"
+modulesPath = appDataDes / "modules"
 loginOptionsData = {}
 app = QApplication(sys.argv)
 threadPool = QThreadPool.globalInstance()
@@ -69,6 +69,7 @@ class Main(QWidget):
         super().__init__(parent)
         self.ui = Ui_main()
         self.ui.setupUi(self)
+        
         self.setWindowTitle("Ahut Tool " + appVersion)
         self.setWindowIcon(QIcon(":/icon/icon_256.svg"))
         #加载所有子ui
@@ -80,32 +81,18 @@ class Main(QWidget):
         self.ui_examSearch_widget = Ui_examSearch_widget()
         self.ui_classSchedule_widget = Ui_classSchedule_widget()
         self.ui_appInfo_widget = Ui_appInfo_widget()
-        self.ui_loading_widget = Ui_loading_widget()
-        self.ui_robClasses_widget = Ui_robClasses_widget()
-        self.ui_custom_widget =  Ui_custom_widget()
+        self.ui_module_widget = Ui_module_widget()
         self.subWidget.addWidget(self.ui_login_widget)
         self.subWidget.addWidget(self.ui_userInfo_widget)
         self.subWidget.addWidget(self.ui_selfPrint_widget)
         self.subWidget.addWidget(self.ui_examSearch_widget)
         self.subWidget.addWidget(self.ui_classSchedule_widget)
         self.subWidget.addWidget(self.ui_appInfo_widget)
-        self.subWidget.addWidget(self.ui_loading_widget)
-        self.subWidget.addWidget(self.ui_robClasses_widget)
-        self.subWidget.addWidget(self.ui_custom_widget)
+        self.subWidget.addWidget(self.ui_module_widget)
         #连接登录成功信号
         self.ui_login_widget.loginSuccess.connect(lambda state,message:self.on_login_result(state,message))
         #登录失效信号
         self.ui_userInfo_widget.loginExpiredSignal.connect(lambda message:self.loginExpired(message))
-
-        #初始化抢课模块
-        self.ui_robClasses_widget.setLoadingProgress.connect(self.setLoadingProgress)
-        self.ui_robClasses_widget.showLoding.connect(self.loadingShow)
-        self.ui_robClasses_widget.setLoadingMessage.connect(self.setLoadingMessage)
-        self.ui_robClasses_widget.setUi.connect(self.showUi)
-        self.ui_robClasses_widget.setSelfUiName(self.ui_robClasses_widget)
-        self.ui_robClasses_widget.setUi.connect(self.enable_Ui_custom_widget)
-        self.ui_robClasses_widget.setCustomUi.connect(self.setCustomUi)
-        self.ui_robClasses_widget.refresh.connect(self.customRefresh)
 
         #绑定工具栏的按钮事件
         self.ui.userInfo_button.clicked.connect(lambda :self.enable_Ui_userInfo_widget())
@@ -113,23 +100,48 @@ class Main(QWidget):
         self.ui.examSearch_button.clicked.connect(lambda :self.enable_Ui_examSearch_widget())
         self.ui.classSchedule_button.clicked.connect(lambda :self.enable_Ui_classSchedule_widget())
         self.ui.appInfo_button.clicked.connect(lambda :self.enable_Ui_appInfo_widget())
-        self.ui.robClasses_button.clicked.connect(lambda :self.enable_Ui_robClasses_widget())
 
-    def customRefresh(self):
-        self.ui_custom_widget.refresh()
+        self.loadModules()
 
-    def setCustomUi(self,data:dict):
-        self.ui_custom_widget.setUi(data)
-
-    def setLoadingMessage(self,message:str,color:Qt.GlobalColor):
-        self.ui_loading_widget.setMessageShow(message,color)
-
-    def setLoadingProgress(self,value:int):
-        self.ui_loading_widget.setProgress(value)
-
-    def loadingShow(self):
-        self.subWidget.setCurrentWidget(self.ui_loading_widget)
+    def loadModules(self):
+        if not os.path.exists(modulesPath):
+            print("模块目录不存在,正在创建\n")
+            os.makedirs(modulesPath)
+            with open(modulesPath / "config.fx",mode = 'w',encoding="utf-8") as f:
+                json.dump([],f)
+        with open(modulesPath / "config.fx",mode = 'r',encoding="utf-8") as f:
+            try:
+                modulesList = json.load(f)
+                print("已加载模块列表:" + str(modulesList) + "\n")
+            except Exception as e:
+                print("加载模块列表异常:" + str(e) + "\n")
+        
+        try:
+            for moduleJson in modulesList:
+                name = moduleJson.get("name")
+                button = QPushButton(name,self.ui.buttonContent)
+                button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+                button.setMinimumHeight(moduleJson.get("height",50))
+                button.setMinimumWidth(moduleJson.get("width",60))
+                button.setObjectName(moduleJson.get("objectName"))
+                toolButtonNameList.append(moduleJson.get("objectName"))
+                self.ui.buttonContent.layout().addWidget(button)
+                button.clicked.connect(lambda checked,data = moduleJson:self.on_module_button_clicked(data))
+        except Exception as e:
+            print("解析模块列表异常:" + str(e) + "\n")
+        
+        space = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.ui.buttonContent.layout().addItem(space)
     
+    def on_module_button_clicked(self,moduleJson:dict):
+        restoreAllToolButton(self)
+        self.ui.buttonContent.findChild(QPushButton, moduleJson.get("objectName")).setEnabled(False)
+        print("模块按钮被点击,模块信息:" + str(moduleJson) + "\n")
+        self.ui_module_widget.clearItem()
+        self.ui_module_widget.setMessageShow("正在加载模块...",color=Qt.darkYellow)
+        self.subWidget.setCurrentWidget(self.ui_module_widget)
+        self.ui_module_widget.setModule(moduleJson)
+
     def returnUi(self,ui:QWidget):
         self.subWidget.setCurrentWidget(ui)
 
@@ -187,38 +199,26 @@ class Main(QWidget):
         self.ui.appInfo_button.setEnabled(False)
         self.subWidget.setCurrentWidget(self.ui_appInfo_widget)
 
-    #侧边栏 抢课按钮被点击
-    def enable_Ui_robClasses_widget(self):
-        print("侧边栏抢课按钮被点击\n")
-        if logined:
-            restoreAllToolButton(self)
-            self.ui.robClasses_button.setEnabled(False)
-            self.subWidget.setCurrentWidget(self.ui_robClasses_widget)
-        else:
-            self.loginExpired("你还没有登录哦~")
-            return
-        self.ui_robClasses_widget.serviceInit()
-
-    #显示填报表单
-    def enable_Ui_fillForm_widget(self):
-        print("打开表单填写界面\n")
-        self.subWidget.setCurrentWidget(self.ui_fillForm_widget)
-
-    #显示选择单项选项界面
-    def enable_Ui_selectAOption_widget(self):
-        print("打开选择单项选项界面\n")
-        self.subWidget.setCurrentWidget(self.ui_selectAOption_widget)
-
-    #显示自定义界面
-    def enable_Ui_custom_widget(self):
-        print("打开自定义界面\n")
-        self.subWidget.setCurrentWidget(self.ui_custom_widget)
-
     def closeEvent(self, event):
         print("主界面关闭事件被触发,正在保存数据\n")
+        self.hide()
         with open(os.path.join(appDataDes,"loginOptions.fx"),"w",encoding="utf-8") as f:
             global loginOptionsData
             json.dump(loginOptionsData,f)
+
+        for moduleName,moduleData in self.ui_module_widget.modulesData.items():
+            program:subprocess.Popen = moduleData.get("program")
+            if program and program.poll() is None:
+                print(f"正在关闭模块{moduleName}\n")
+                program.stdin.write("{'aim':'exit'}\n")
+                program.stdin.flush()
+                time_sleep(0.2)
+                if program.poll() is None:
+                    print(f"模块{moduleName}未正常关闭,正在强制终止\n")
+                    program.kill()
+                    program.stdin.close()
+                    program.stdout.close()
+            print(f"模块{moduleName}已关闭\n")
 
     def showUi(self,uiName:str):
         try:
@@ -254,7 +254,7 @@ class Ui_login_widget(QWidget):
         if not os.path.exists(appDataDes):
             os.makedirs(appDataDes)
 
-        print("软件数据路径:" + appDataDes + "\n")
+        print("软件数据路径:" + str(appDataDes) + "\n")
         global loginOptionsData
         try:
             loginOptionsDes = os.path.join(appDataDes,"loginOptions.fx")
@@ -273,9 +273,9 @@ class Ui_login_widget(QWidget):
             loginOptionsData["pwd"] = ""
             loginOptionsData["id"] = ""
 
-        self.ui_login.autoLogin.setChecked(loginOptionsData["autoLogin"])
-        self.ui_login.login_idInput.setText(loginOptionsData["id"])
-        self.ui_login.login_pwdInput.setText(loginOptionsData["pwd"])
+        self.ui_login.autoLogin.setChecked(loginOptionsData.get("autoLogin", False))
+        self.ui_login.login_idInput.setText(loginOptionsData.get("id", ""))
+        self.ui_login.login_pwdInput.setText(loginOptionsData.get("pwd", ""))
 
         if self.ui_login.autoLogin.isChecked():
             self.ui_login.used_accept.setChecked(True)
@@ -306,18 +306,18 @@ class Ui_login_widget(QWidget):
         self.ui_login.messageShow.setText(message)
     
     def on_login_button_clicked(self):
-        global userId, userpwd,semester,loginOptionsData
+        global userId, userPwd,semester,loginOptionsData
         print("登录按钮被点击\n")
         self.ui_login.used_accept.setEnabled(False)
         self.ui_login.login_button.setEnabled(False)
         semester = ""
         userId = self.ui_login.login_idInput.text()
-        userpwd = self.ui_login.login_pwdInput.text()
+        userPwd = self.ui_login.login_pwdInput.text()
         if self.ui_login.autoLogin.isChecked():
             loginOptionsData["id"] = userId
-            loginOptionsData["pwd"] = userpwd
-        print("登录信息:" + userId + " " + userpwd + "\n")
-        if not userId or not userpwd:
+            loginOptionsData["pwd"] = userPwd
+        print("登录信息:" + userId + " " + userPwd + "\n")
+        if not userId or not userPwd:
             self.login_returnFunction(False,"请输入用户名和密码")
             return
         
@@ -576,21 +576,11 @@ class Ui_selfPrint_widget(QWidget):
                 return
             
             self.setMessageShow(f"请选择保存路径",color=Qt.darkYellow)
-            self.destPath = QFileDialog.getExistingDirectory(
-                self,
-                f"选择文件夹以保存 {ButtonName}.pdf",
-                None,
-                QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
-            )
-
-            # 判断用户是否选择了文件夹（点击取消则返回空字符串）
-            if self.destPath:
-                print(f"选中的文件夹路径：{self.destPath}")
-            else:
-                print("用户取消了选择")
-                self.setMessageShow("您取消了选择",color=Qt.darkYellow)
+            state,message,self.destPath = selectAFolder(self,f"选择文件夹以保存 {ButtonName}.pdf")
+            if not state:
+                self.setMessageShow(message,color=Qt.red)
+                print(message + "\n")
                 return
-
             threadPool.start(self.downloadPrintFile)
             self.downloadPrintFileIsRunning = True
             self.setMessageShow(f"正在下载{ButtonName}的打印文件...",color=Qt.darkYellow)
@@ -898,209 +888,148 @@ class Ui_appInfo_widget(QWidget):
         self.ui_appInfo.appInfoMessage.setHtml(message)
         print("填充appInfo成功:" + message + "\n")
 
-#加载界面
-class Ui_loading_widget(QWidget):
-    def __init__(self, parent:type = None):
-        super().__init__(parent)
-        self.ui_loading = Ui_loading()
-        self.ui_loading.setupUi(self)
-        self.Player = QMovie()
-    
+#模块界面
+class Ui_module_widget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.ui_module = Ui_module()
+        self.ui_module.setupUi(self)
+        self.modulesData = {}
+        self.currentProgram = None
+        self.lock = False
+        self.getVals = None
+
     def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
         paletter = QPalette()
         paletter.setColor(QPalette.WindowText, color)
-        self.ui_loading.messageShow.setPalette(paletter)
-        self.ui_loading.messageShow.setText(message)
+        self.ui_module.messageShow.setPalette(paletter)
+        self.ui_module.messageShow.setText(message)
 
-    def setProgress(self, process:int):
-        self.ui_loading.loadingProcess.setValue(process)
+    def setModule(self,setModuleData:dict):
+        try:
+            self.lock = False
+            if self.currentProgram and self.currentModuleName != setModuleData.get("name"):
+                self.postData = {
+                    "appVersionInt" : appVersionInt,
+                    "aim" : "hidden",
+                }
+                self.postDataToProgram(self.postData)
+        except Exception as e:
+            print("模块程序通信异常error 1101:" + str(e) + "\n")
+            self.setMessageShow("模块程序通信异常error 1101:" + str(e),color=Qt.red)
 
-    def showEvent(self, event):
-        super().showEvent(event)
-        # 每次显示时创建新的 QMovie（避免复用旧对象）
-        self.Player = QMovie(":/loading/loading2.gif")
-        self.ui_loading.loadingFrame.setMovie(self.Player)
-        self.Player.start()
-
-    def hideEvent(self, event):
-        super().hideEvent(event)
-        if hasattr(self, 'Player') and self.Player is not None:
-            # 1. 先断开控件与 QMovie 的关联（关键！）
-            self.ui_loading.loadingFrame.setMovie(None)
-            # 2. 停止播放
-            self.Player.stop()
-            # 3. 安全销毁 C++ 对象
-            self.Player.deleteLater()
-            # 4. 清空 Python 引用，让垃圾回收器处理
-            self.Player = None
-
-#抢课界面
-class Ui_robClasses_widget(QWidget):
-    showLoding = Signal()
-    setLoadingProgress = Signal(int)
-    setLoadingMessage = Signal(str,Qt.GlobalColor)
-    returnUi = Signal(QWidget)
-    setUi = Signal(str)
-    setCustomUi = Signal(dict)
-    refresh = Signal()
-
-    def __init__(self, parent:type = None):
-        super().__init__(parent)
-        self.ui_robClass = Ui_robClasses()
-        self.ui_robClass.setupUi(self)
-        self.haveInit = 0
-        self.initPregress = 0
-        self.loadingMessage = ""
-        self.communicateWithRobClassesServerThreadisRunning = False
-        self.haveInit = 0
-        self.postData = {}
-    
-    def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
-        self.setLoadingMessage.emit(message,color)
-    
-    def setSelfUiName(self, name:QWidget):
-        self.SelfUiName = name
-    
-    def serviceInit(self):
-        self.dealTheMessageCanRun = True
-        print("显示抢课界面\n")
-        self.setLoadingProgress.emit(self.initPregress)
-        self.showLoding.emit()
-        self.setLoadingMessage.emit("正在连接服务器...",Qt.darkYellow)
-        self.loadingMessage = "正在连接服务器..."
-        self.loadingMessageColor = Qt.darkYellow
+        try:
+            self.currentModulePath = pathlib.Path(appDataDes / "modules" / setModuleData.get("path"))
+        except Exception as e:
+            print("模块界面路径异常:" + str(e) + "\n")
         
-        if not self.postData:
-            self.postData = {"aim":"connect","appVersionInt" : appVersionInt,"userId":userId,"userPwd":userpwd,
-                             "cookies":session.cookies.get_dict()}
-        else:
-            if type(self.postData) == str:
-                self.postData = {}
-            self.postData.update({"aim":"reconnect","appVersionInt" : appVersionInt})
-        self.connectRobClassesServerThread = PostRequestThread(robClassesUrl,text=switchStr(json.dumps(self.postData)),timeout=10)
-        self.connectRobClassesServerThread.resultSignal.connect(self.dealTheMessage)
-        threadPool.start(self.connectRobClassesServerThread)
-        print(f"连接服务器{robClassesUrl},data={self.postData}\n")       
-
-    def dealTheMessage(self,state:bool,message:str,response:requests.Response):
-        self.refresh.emit()
-        responseJson = {}
         try:
-            if not state:
-                self.setLoadingMessage.emit(message,Qt.red)
-                self.loadingMessage = message
-                self.loadingMessageColor = Qt.red
-                print("服务器数据:")
-                print(message + "\n")
+            self.needLogin = setModuleData.get("needLogin",False)
+            self.currentModuleName = setModuleData.get("name")
+        except Exception as e:
+            print("模块界面配置异常:" + str(e) + "\n")
+
+        self.postData = {
+            "appVersionInt" : appVersionInt,
+            "aim" : "show" if self.modulesData.get(self.currentModuleName,False) else "init"
+        }
+        self.currentModuleData = self.modulesData.get(self.currentModuleName,None)
+        try:
+            if os.path.exists(self.currentModulePath):
+                if self.currentModuleData and self.currentModuleData.get("program",None) and self.currentModuleData["program"].poll() is None:
+                    self.currentProgram = self.currentModuleData.get("program")
+                    print(f"模块程序已在运行，直接使用{type(self.currentProgram)}\n")
+                else:
+                    self.currentProgram = subprocess.Popen([str(setModuleData.get("runArgs")), str(self.currentModulePath)], 
+                                        stdin=subprocess.PIPE , 
+                                        stdout=subprocess.PIPE, 
+                                        creationflags=0,
+                                        text=True)
+                    self.modulesData[self.currentModuleName] = {
+                        "program" : self.currentProgram,
+                    } 
+                    self.currentModuleData = self.modulesData[self.currentModuleName]                               
+                    captureOutThreading = self.captureOutPut(self.currentProgram,self.currentModuleName)
+                    captureOutThreading.outPutSignals.connect(self.dealTheMessage)
+                    self.currentModuleData["captureOutThreading"] = captureOutThreading
+                    threadPool.start(captureOutThreading)
             else:
-                responseJson = json.loads(switchStr(response.text))
-        except:
-            print(response.text)
-            print("服务器数据解析异常\n")
-            self.setLoadingMessage.emit("无法解析服务器数据，请更新客户端版本",Qt.red)
+                print("模块程序不存在:" + str(self.currentModulePath) + "\n")
+                self.setMessageShow("模块程序不存在:" + str(self.currentModulePath),color=Qt.red)
+        except Exception as e:
+            print("模块程序启动异常:" + str(e) + "\n")
+            self.setMessageShow("模块程序启动异常:" + str(e),color=Qt.red)
+            raise
+        self.postDataToProgram(self.postData)
+        
+    def dealTheMessage(self,state:int,msg_row:str,moduleName:str):
+        self.lock = False
+        if moduleName != self.currentModuleName:
+            print(f"收到模块{moduleName}的数据，但当前模块是{self.currentModuleName}，已忽略\n")
             return
+        elif self.isHidden():
+            print(f"收到模块{moduleName}的数据，但当前界面是隐藏的，已忽略\n")
+            return
+        elif state == 0:
+            print(f"模块{moduleName}报错，输出:\n{msg_row}\n")
+            return
+        else:
+            try:
+                msg = json.loads(msg_row)
+            except Exception as e:
+                print(f"模块{moduleName}输出了非json格式的数据，内容:\n{msg_row}\n")
+                return
         try:
-            print("服务器数据:")
-            print(responseJson)
-            self.postData = responseJson.get("postData","{}")
-            op = responseJson.get("op",None)    
-            if op == None:
-                self.setLoadingMessage.emit("通信异常:返回数据格式错误",Qt.red)
-                print("通信异常:返回数据格式错误\n")
-                return
-            if op == 0:
-                self.setLoadingMessage.emit("等待服务器下发数据...",Qt.darkYellow)
-                if responseJson.get("setMessage",None) != None:
-                    self.setLoadingMessage.emit(responseJson["setMessage"], getattr(Qt, responseJson["setColor"]))
-                    self.loadingMessage = responseJson["setMessage"]
-                    self.loadingMessageColor = getattr(Qt, responseJson["setColor"])
+            print(f"模块{self.currentModuleName}的数据:")
+            print(msg)
             
-            if op == 1:
-                self.getVals = responseJson.get("getVals",None)
-                if self.getVals != None:
-                    self.postData["postVal"] = {}
-                    for getVal in self.getVals:
-                        if getVal == "cookies":
-                            self.postData["postVal"][getVal] = session.cookies.get_dict()
-                        else:
-                            self.postData["postVal"][getVal] = globals().get(getVal,None)
+            self.postData = msg.get("postData",{})
+            self.getVals = msg.get("getVals",None)
+            if self.getVals != None:
+                self.postData["postVals"] = {}
+                for getVal in self.getVals:
+                    if getVal == "cookies":
+                        self.postData["postVals"][getVal] = session.cookies.get_dict()
+                    else:
+                        print(f"模块请求获取变量{getVal}的值\n")
+                        self.postData["postVals"][getVal] = globals().get(getVal,None)
 
-                self.saveVals = responseJson.get("saveVals",None)
-                if self.saveVals != None:
-                    for key,val in self.saveVals.items():
-                        globals()[key] = val
-                        print(f"收到服务器的数据{key} = {val}\n")
+            self.saveVals = msg.get("saveVals",None)
+            if self.saveVals != None:
+                for key,val in self.saveVals.items():
+                    globals()[key] = val
+                    print(f"收到模块的数据{key} = {val}\n")
 
-                if responseJson.get("setFillForm",None) != None:
-                    self.setFillForm.emit(responseJson["setFillForm"])
-                if responseJson.get("setSelectAOption",None) != None:
-                    self.setSelectaOption.emit(responseJson["setSelectAOption"])
-
-                if responseJson.get("setCustomUi",None) != None:
-                    self.setCustomUi.emit(responseJson["setCustomUi"])
-
-                if responseJson.get("setUi",None) != None:
-                    print("服务器命令:setUi=" + responseJson["setUi"],"\n")
-                    self.setUi.emit(responseJson["setUi"])
-
-                if responseJson.get("setProgress",None) != None:
-                    self.setLoadingProgress.emit(responseJson["setProgress"])
-            if op == 2:
-                print(f"通信{robClassesUrl}结束\n")
-                self.communicateWithRobClassesServerThreadisRunning = False
-                return
+            if msg.get("setMessageShow",None) != None:
+                self.setMessageShow(msg["setMessageShow"].get("text",""), color=msg["setMessageShow"].get("color","red"))
             
-            if responseJson.get("setMessage",None) != None:
-                self.setLoadingMessage.emit(responseJson["setMessage"], getattr(Qt, responseJson["setColor"]))
-                self.loadingMessage = responseJson["setMessage"]
-                self.loadingMessageColor = getattr(Qt, responseJson["setColor"])
+            if msg.get("setUi",None) != None:
+                self.setUi(msg["setUi"])
+            
+            if msg.get("autoPost",False):
+                self.postDataToProgram(self.postData)
             
         except Exception as e:
-            self.setLoadingMessage.emit("通信异常:可能服务器暂未开放服务",Qt.red)
-            self.loadingMessage = "通信异常:" + str(e)
-            self.loadingMessageColor = Qt.red
             print("通信异常:" + str(e) + "\n")
             raise
-        
-
-        if self.communicateWithRobClassesServerThreadisRunning == False:
-            print("客户端发送数据：")
-            encryption = switchStr(json.dumps(self.postData))
-            print(f"{json.dumps(self.postData)}", "\n")
-            self.communicateWithRobClassesServerThread = PostRequestThread(robClassesUrl,text=encryption,timeout=10,delay = 1)
-            self.communicateWithRobClassesServerThread.resultSignal.connect(self.communicateWithRobClassesServerThreadFinished)
-            threadPool.start(self.communicateWithRobClassesServerThread)
-            self.communicateWithRobClassesServerThreadisRunning = True
-
-    def communicateWithRobClassesServerThreadFinished(self,state:bool,message:str,response:requests.Response):
-        self.communicateWithRobClassesServerThreadisRunning = False
-        if self.dealTheMessageCanRun:
-            self.dealTheMessage(state,message,response)
-
-#自定义界面
-class Ui_custom_widget(QWidget):
-    def __init__(self, parent:type = None):
-        super().__init__(parent)
-        self.ui_custom = Ui_custom()
-        self.ui_custom.setupUi(self)
-        self.buttonClickedThreadisRunning = False
     
-    def refresh(self):
-            self.buttonClickedThreadisRunning = False
+    def clearItem(self):
+        try:
+            while self.ui_module.content.count() > 0:
+                layout_item = self.ui_module.content.takeAt(0)
+                widget = layout_item.widget()
+                if widget:
+                    widget.deleteLater()
+                del layout_item 
+        except Exception as e:
+            print("清除界面元素异常:" + str(e) + "\n")
+            self.setMessageShow("清除界面元素异常:" + str(e),color=Qt.red)
 
     def setUi(self,data:dict):
         try:
             font = QFont()
             self.data = data
-            self.postData = data.get("postData",{})
-            while self.ui_custom.content.count() > 0:
-                layout_item = self.ui_custom.content.takeAt(0)
-                widget = layout_item.widget()
-                if widget:
-                    widget.deleteLater()
-                del layout_item
-            
-            self.setMessageShow(data.get('setMessage',''),data.get('setColor',Qt.red))
+            self.clearItem()
             for row,items in enumerate(data.get("main",[]),start=1):
                 for col,item in enumerate(items,start=1):
                     elementType = item.get("type","")
@@ -1137,10 +1066,10 @@ class Ui_custom_widget(QWidget):
                         element.setFixedWidth(item.get("width"))
                     if item.get("height",None):
                         element.setFixedHeight(item.get("height"))
-                    if element:self.ui_custom.content.addWidget(element,item.get("row",row),item.get("col",col),item.get("rowSpan",1),item.get("colSpan",1))
-
+                    if element:self.ui_module.content.addWidget(element,item.get("row",row),item.get("col",col),item.get("rowSpan",1),item.get("colSpan",1))
             space  = QSpacerItem(0, 0, QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
-            self.ui_custom.content.addItem(space,self.ui_custom.content.rowCount() + 100,1)
+            self.ui_module.content.addItem(space,self.ui_module.content.rowCount() + 100,1)
+            
         except Exception as e:
             print("填充自定义界面异常:" + str(e) + "\n")
             self.setMessageShow("填充自定义界面异常:" + str(e),color=Qt.red)
@@ -1155,29 +1084,61 @@ class Ui_custom_widget(QWidget):
         self.postData[key] = text
     
     def buttonClicked(self,btnKey:str,postUrl:str,val:str = ""):
-        if self.buttonClickedThreadisRunning:
-            self.setMessageShow("请稍后,上一个表单还在提交中...",color=Qt.red)
-            print("请稍后,上一个表单还在提交中...\n")
+        if self.lock:
+            print("请稍后,模块正在处理消息中...\n")
+            self.setMessageShow("请稍后,模块正在处理消息中...",color=Qt.darkYellow)
         else:
-            print("等待服务器下发数据...")
-            self.setMessageShow("等待服务器下发数据...",color=Qt.darkGreen)
-            self.postData["btnKey"] = btnKey
+            print(f"按下 {btnKey}，等待模块下发数据...")
+            self.setMessageShow(f"等待模块下发数据...",color=Qt.darkYellow)
+            self.postData["aim"] = btnKey
             self.postData["val"] = val
-            print(f"按钮{btnKey}被点击了\n向服务器发送数据:\n{self.postData}\n{postUrl}\n")
-            encryption = switchStr(json.dumps(self.postData))
-            self.postDataThread = PostRequestThread(postUrl,text=encryption,timeout=10)
-            self.buttonClickedThreadisRunning = True
-            threadPool.start(self.postDataThread)
+            self.postDataToProgram(self.postData)
+            self.lock = True
     
-    def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
-        paletter = QPalette()
-        paletter.setColor(QPalette.WindowText, color)        
-        self.ui_custom.messageShow.setPalette(paletter)
-        self.ui_custom.messageShow.setText(message)
-
+    def postDataToProgram(self,data:dict):
+        try:
+            if self.currentProgram and self.currentProgram.poll() is None:
+                self.currentProgram.stdin.write(json.dumps(data,indent = None) + "\n")
+                self.currentProgram.stdin.flush()
+                print(f"向模块{self.currentModuleName}发送数据:\n{data}\n")
+            else:
+                print("模块程序未启动或已退出\n")
+                print(self.currentProgram.poll(),self.currentModuleName)
+                self.setMessageShow("模块程序未启动或已退出",color=Qt.red)
+        except Exception as e:
+            print("向模块程序发送数据异常:" + str(e) + "\n")
+            self.setMessageShow("向模块程序发送数据异常:" + str(e),color=Qt.red)
+    
+    def hideEvent(self, event):
+        super().hideEvent(event)
+        postData = {'aim' : 'hidden'}
+        if self.currentProgram:
+            self.postDataToProgram(postData)
+        
+    class captureOutPut(QRunnable):
+        def __init__(self, program:subprocess.Popen,moduleName:str):
+            super().__init__()
+            self.Signals = threadPoolSignals()
+            self.outPutSignals = self.Signals.signal_int_str_str
+            self.program = program
+            self.moduleName = moduleName
+            print(f"启动模块{self.moduleName}的输出捕获线程\n")
+        
+        @Slot()
+        def run(self):
+            while self.program.poll() is None and self.program.stdout.closed == False:
+                try:
+                    output = self.program.stdout.readline()
+                    if output:
+                        self.outPutSignals.emit(1,output,self.moduleName)
+                except Exception as e:
+                    print("捕获模块输出异常:" + str(e) + "\n")
+                    self.outPutSignals.emit(0,str(e),self.moduleName)
+            print(f"模块线程{self.moduleName}已退出\n")
+            
 #登录线程
-class LoginThread(QRunnable): 
-    global session, userId, userpwd
+class LoginThread(QRunnable):
+    global session, userId, userPwd
     def __init__(self):
         super().__init__()
         self.threadPoolSignals = threadPoolSignals()  # 定义一个信号，传递请求结果（成功与否和消息）
@@ -1192,7 +1153,7 @@ class LoginThread(QRunnable):
             postData = {
                 "userAccount": userId,
                 "userPassword": "",
-                "encoded" : base64.b64encode(userId.encode("utf-8")).decode("utf-8") + "%%%" + base64.b64encode(userpwd.encode("utf-8")).decode("utf-8")
+                "encoded" : base64.b64encode(userId.encode("utf-8")).decode("utf-8") + "%%%" + base64.b64encode(userPwd.encode("utf-8")).decode("utf-8")
             }
         except Exception as e:
             self.result.emit(False, "URL拼接异常:" + str(e))
@@ -1243,6 +1204,7 @@ def login(self,returnFunction:type = None):
         threadPool.start(self.loginThread)
         self.loginThreadIsRunning = True
 
+#加密函数
 def switchStr(content:str):
     result = ""
     for idx,c in enumerate(content,start = appVersionInt):
@@ -1302,34 +1264,41 @@ class PostRequestThread(QRunnable):
             #self.resultSignal.emit(0, "网络异常:" + str(e),None)
             self.resultSignal.emit(0, "网络异常:请检查网络连接或稍后再试",None)
 
-#抢课线程
-class connectRobClassesServer(QRunnable):
-    def __init__(self, parent:type = None):
-        super().__init__(parent)
-        self.resultSignal = threadPoolSignals().signal_int_str_resopnse  # 定义一个信号，传递请求结果（成功与否和消息）
-    
-    def run(self):
-        global session, userId, userpwd
-        while True:
-            try:
-                time_sleep(1)
-                response = session.get(robClassesUrl, timeout=5)
-                self.resultSignal.emit(1, response.text)
-            except Exception as e:
-                print("连接服务器异常:" + str(e))
-                self.resultSignal.emit(0, "连接服务器异常:请检查网络连接,或者作者暂未开放服务")
-                return
-
 #信号
 class threadPoolSignals(QObject):
     signal_bool_str = Signal(bool, str)
     signal_int_str_resopnse = Signal(int, str,requests.Response)
+    signal_int_str_str = Signal(int, str,str)
+    signal_json = Signal(dict)
+
+def selectAFolder(self,message:str = "请选择文件夹"):
+    self.destPath = QFileDialog.getExistingDirectory(
+                self,
+                message,
+                None,
+                QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
+            )
+    if self.destPath:
+        return 1,"选中成功",self.destPath
+    else:
+        return 0,"用户取消了选择",None
+
+def selectAFile(self,message:str = "请选择文件"):
+    filePath, _ = QFileDialog.getOpenFileName(
+        self,
+        message,
+        None,
+    )
+    if filePath:
+        return 1,"选中成功",filePath
+    else:
+        return 0,"用户取消了选择",None
+
 
 #恢复所有按钮为可点击状态
 def restoreAllToolButton(mainWindow):
     for btnName in toolButtonNameList:
-        mainWindow.ui.__getattribute__(btnName).setEnabled(True)
-    mainWindow.ui_robClasses_widget.dealTheMessageCanRun = False
+        mainWindow.ui.buttonContent.findChild(QPushButton, btnName).setEnabled(True)
 
 if __name__ == "__main__":
     widget = Main()
