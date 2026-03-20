@@ -9,9 +9,12 @@ from urllib import parse
 import pathlib
 import base64
 import subprocess
-import copy
+import zipfile
+import shutil
 from bs4 import BeautifulSoup
 import os,json
+import ctypes
+import ctypes.wintypes
 from time import sleep as time_sleep
 # 导入编译后的主UI和子UI类
 from ui_py.ui_form import Ui_main
@@ -22,7 +25,7 @@ from ui_py.ui_examSearch import Ui_examSearch
 from ui_py.ui_classSchedule import Ui_classSchedule
 from ui_py.ui_appInfo import Ui_appInfo
 from ui_py.ui_module import Ui_module
-#导入资源文件
+from ui_py.ui_moduleManager import Ui_moduleManager
 from img_py.img_icon import *
 #配置
 baseUrl = "http://jwxt.ahut.edu.cn/jsxsd/"
@@ -43,7 +46,8 @@ toolButtonNameList = ["userInfo_button",
                       "selfPrint_button",
                       "examSearch_button",
                       "classSchedule_button",
-                      "appInfo_button"]
+                      "appInfo_button",
+                      "moduleManager_button"]
 userId = ""
 userPwd = ""
 logined = False
@@ -54,13 +58,14 @@ userClass = ""
 userAvatar = None
 semester = ""
 currDate = QDate.currentDate().toString("yyyy-MM-dd")
-appVersion = "2.2"
-appVersionInt = 22
+appVersion = "2.4"
+appVersionInt = 24
 appDataDes = pathlib.Path(os.getenv("APPDATA")) / "ahutTool"
 modulesPath = appDataDes / "modules"
 loginOptionsData = {}
 app = QApplication(sys.argv)
 threadPool = QThreadPool.globalInstance()
+modulesData = {}
 
 #主界面
 class Main(QWidget):
@@ -82,6 +87,7 @@ class Main(QWidget):
         self.ui_classSchedule_widget = Ui_classSchedule_widget()
         self.ui_appInfo_widget = Ui_appInfo_widget()
         self.ui_module_widget = Ui_module_widget()
+        self.ui_moduleManager_widget = Ui_moduleManager_widget()
         self.subWidget.addWidget(self.ui_login_widget)
         self.subWidget.addWidget(self.ui_userInfo_widget)
         self.subWidget.addWidget(self.ui_selfPrint_widget)
@@ -89,6 +95,7 @@ class Main(QWidget):
         self.subWidget.addWidget(self.ui_classSchedule_widget)
         self.subWidget.addWidget(self.ui_appInfo_widget)
         self.subWidget.addWidget(self.ui_module_widget)
+        self.subWidget.addWidget(self.ui_moduleManager_widget)
         #连接登录成功信号
         self.ui_login_widget.loginSuccess.connect(lambda state,message:self.on_login_result(state,message))
         #登录失效信号
@@ -100,7 +107,7 @@ class Main(QWidget):
         self.ui.examSearch_button.clicked.connect(lambda :self.enable_Ui_examSearch_widget())
         self.ui.classSchedule_button.clicked.connect(lambda :self.enable_Ui_classSchedule_widget())
         self.ui.appInfo_button.clicked.connect(lambda :self.enable_Ui_appInfo_widget())
-
+        self.ui.moduleManager_button.clicked.connect(lambda :self.enable_Ui_moduleManager_widget())
         self.loadModules()
 
     def loadModules(self):
@@ -137,7 +144,7 @@ class Main(QWidget):
         restoreAllToolButton(self)
         self.ui.buttonContent.findChild(QPushButton, moduleJson.get("objectName")).setEnabled(False)
         print("模块按钮被点击,模块信息:" + str(moduleJson) + "\n")
-        self.ui_module_widget.clearItem()
+        removeAllItemForGrid(self.ui_module_widget.ui_module.content)
         self.ui_module_widget.setMessageShow("正在加载模块...",color=Qt.darkYellow)
         self.subWidget.setCurrentWidget(self.ui_module_widget)
         self.ui_module_widget.setModule(moduleJson)
@@ -199,6 +206,12 @@ class Main(QWidget):
         self.ui.appInfo_button.setEnabled(False)
         self.subWidget.setCurrentWidget(self.ui_appInfo_widget)
 
+    def enable_Ui_moduleManager_widget(self):
+        print("侧边栏模块管理按钮被点击\n")
+        restoreAllToolButton(self)
+        self.ui.moduleManager_button.setEnabled(False)
+        self.subWidget.setCurrentWidget(self.ui_moduleManager_widget)
+
     def closeEvent(self, event):
         print("主界面关闭事件被触发,正在保存数据\n")
         self.hide()
@@ -206,18 +219,19 @@ class Main(QWidget):
             global loginOptionsData
             json.dump(loginOptionsData,f)
 
-        for moduleName,moduleData in self.ui_module_widget.modulesData.items():
+        for moduleName,moduleData in modulesData.items():
             program:subprocess.Popen = moduleData.get("program")
             if program and program.poll() is None:
                 print(f"正在关闭模块{moduleName}\n")
                 program.stdin.write("{'aim':'exit'}\n")
                 program.stdin.flush()
+                program.stdin.close()
+                program.stdout.close()
                 time_sleep(0.2)
                 if program.poll() is None:
                     print(f"模块{moduleName}未正常关闭,正在强制终止\n")
                     program.kill()
-                    program.stdin.close()
-                    program.stdout.close()
+                
             print(f"模块{moduleName}已关闭\n")
 
     def showUi(self,uiName:str):
@@ -894,11 +908,10 @@ class Ui_module_widget(QWidget):
         super().__init__()
         self.ui_module = Ui_module()
         self.ui_module.setupUi(self)
-        self.modulesData = {}
         self.currentProgram = None
         self.lock = False
         self.getVals = None
-
+        
     def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
         paletter = QPalette()
         paletter.setColor(QPalette.WindowText, color)
@@ -919,7 +932,7 @@ class Ui_module_widget(QWidget):
             self.setMessageShow("模块程序通信异常error 1101:" + str(e),color=Qt.red)
 
         try:
-            self.currentModulePath = pathlib.Path(appDataDes / "modules" / setModuleData.get("path"))
+            self.currentModulePath = pathlib.Path(modulesPath / setModuleData.get("objectName") / setModuleData.get("path"))
         except Exception as e:
             print("模块界面路径异常:" + str(e) + "\n")
         
@@ -931,24 +944,27 @@ class Ui_module_widget(QWidget):
 
         self.postData = {
             "appVersionInt" : appVersionInt,
-            "aim" : "show" if self.modulesData.get(self.currentModuleName,False) else "init"
+            "aim" : "show" if modulesData.get(self.currentModuleName,False) else "init"
         }
-        self.currentModuleData = self.modulesData.get(self.currentModuleName,None)
+        self.currentModuleData = modulesData.get(self.currentModuleName,None)
         try:
             if os.path.exists(self.currentModulePath):
                 if self.currentModuleData and self.currentModuleData.get("program",None) and self.currentModuleData["program"].poll() is None:
                     self.currentProgram = self.currentModuleData.get("program")
                     print(f"模块程序已在运行，直接使用{type(self.currentProgram)}\n")
                 else:
-                    self.currentProgram = subprocess.Popen([str(setModuleData.get("runArgs")), str(self.currentModulePath)], 
+                    self.currentProgram = popen_with_job([str(setModuleData.get("runArgs")), str(self.currentModulePath)], 
                                         stdin=subprocess.PIPE , 
                                         stdout=subprocess.PIPE, 
-                                        creationflags=0,
+                                        text=True) if setModuleData.get("runArgs",None) else \
+                                        popen_with_job([str(self.currentModulePath)], 
+                                        stdin=subprocess.PIPE,  
+                                        stdout=subprocess.PIPE,
                                         text=True)
-                    self.modulesData[self.currentModuleName] = {
+                    modulesData[self.currentModuleName] = {
                         "program" : self.currentProgram,
-                    } 
-                    self.currentModuleData = self.modulesData[self.currentModuleName]                               
+                    }
+                    self.currentModuleData = modulesData[self.currentModuleName]                               
                     captureOutThreading = self.captureOutPut(self.currentProgram,self.currentModuleName)
                     captureOutThreading.outPutSignals.connect(self.dealTheMessage)
                     self.currentModuleData["captureOutThreading"] = captureOutThreading
@@ -1013,23 +1029,11 @@ class Ui_module_widget(QWidget):
             print("通信异常:" + str(e) + "\n")
             raise
     
-    def clearItem(self):
-        try:
-            while self.ui_module.content.count() > 0:
-                layout_item = self.ui_module.content.takeAt(0)
-                widget = layout_item.widget()
-                if widget:
-                    widget.deleteLater()
-                del layout_item 
-        except Exception as e:
-            print("清除界面元素异常:" + str(e) + "\n")
-            self.setMessageShow("清除界面元素异常:" + str(e),color=Qt.red)
-
     def setUi(self,data:dict):
         try:
             font = QFont()
             self.data = data
-            self.clearItem()
+            removeAllItemForGrid(self.ui_module.content)
             for row,items in enumerate(data.get("main",[]),start=1):
                 for col,item in enumerate(items,start=1):
                     elementType = item.get("type","")
@@ -1135,7 +1139,187 @@ class Ui_module_widget(QWidget):
                     print("捕获模块输出异常:" + str(e) + "\n")
                     self.outPutSignals.emit(0,str(e),self.moduleName)
             print(f"模块线程{self.moduleName}已退出\n")
+
+#模块管理界面
+class Ui_moduleManager_widget(QWidget):
+    def __init__(self, parent:type = None):
+        super().__init__(parent)
+        self.ui_moduleManage = Ui_moduleManager()
+        self.ui_moduleManage.setupUi(self)
+        self.ui_moduleManage.importModule.clicked.connect(self.importModule)
+    
+    def importModule(self):
+        self.setMessageShow("选择要导入的模块文件.zip",color=Qt.darkYellow)
+        state,message,filePath = selectAFile(self,"选择要导入的模块文件.zip",filter = "模块文件 (*.zip)")
+        if not state:
+            print(message + "\n")
+            self.setMessageShow(message,color=Qt.red)
+            return
+        try:
+            self.setMessageShow("正在导入模块...",color=Qt.darkYellow)
+            tempPath = modulesPath / "temp"
+            if os.path.exists(tempPath):
+                shutil.rmtree(tempPath, ignore_errors=True)
+                print(f"清空临时文件夹中...",tempPath)
+                self.setMessageShow(f"清空临时文件夹中...",color=Qt.darkYellow)
+            os.mkdir(tempPath)
+            with zipfile.ZipFile(filePath, 'r') as zip_ref:
+                zip_ref.extractall(tempPath)
+            moduleConfigPath = pathlib.Path(tempPath / "moduleConfig.json")
+            if not os.path.exists(moduleConfigPath):
+                print("模块配置文件moduleConfig.json不存在,无法安装\n")
+                self.setMessageShow("模块配置文件moduleConfig.json不存在,无法安装",color=Qt.red)
+                return
+            try:
+                with open(moduleConfigPath, "r", encoding="utf-8") as f:
+                    moduleConfig = json.load(f)
+            except Exception as e:
+                print("模块配置文件解析异常:" + str(e) + "\n")
+                self.setMessageShow("模块配置文件解析异常:" + str(e),color=Qt.red)
+                return
+            moduleName = moduleConfig.get("name",None)
+            objectName = moduleConfig.get("objectName",None)
+            if not moduleName:
+                print("模块配置文件中缺少name字段,无法安装\n")
+                self.setMessageShow("模块配置文件中缺少name字段,无法安装",color=Qt.red)
+                return
+            modulePath = modulesPath / objectName
+            print(f"验证模块完整性中...")
+            self.setMessageShow(f"验证模块完整性中...",color=Qt.darkYellow)
+            if moduleConfig.get("path",False) == False \
+                or moduleConfig.get("objectName",False) == False:
+                print("模块文件不完整,缺少必要文件或字段,无法安装")
+                self.setMessageShow("模块文件不完整,缺少必要文件或字段,无法安装",color=Qt.red)
+                return
+            modulesConfigPath = pathlib.Path(modulesPath / "config.fx")
+            with open(modulesConfigPath,mode = 'r',encoding='utf-8') as f:
+                try:
+                    modulesConfig:list = json.load(f)
+                except Exception as e:
+                    modulesConfig = []
+            for module in modulesConfig:
+                if module.get("name","") == moduleName:
+                    print("已存在同名模块,无法安装")
+                    self.setMessageShow("已存在同名模块,无法安装",color=Qt.red)
+                    return
+                if module.get("objectName","") == objectName:
+                    print("已存在同objectName的模块,无法安装")
+                    self.setMessageShow("已存在同objectName的模块,无法安装",color=Qt.red)
+                    return
+            os.rename(tempPath, modulePath)
+            if not os.path.exists(modulePath):
+                print("模块重命名失败,无法安装\n")
+                self.setMessageShow("模块重命名失败,无法安装",color=Qt.red)
+                return
+            modulesConfig.append(moduleConfig)
             
+            with open(modulesConfigPath,mode = 'w',encoding='utf-8') as f:
+                json.dump(modulesConfig,f,indent=4,ensure_ascii=False)
+            
+            print(f"模块{moduleConfig['name']}导入成功!\n")
+            self.setMessageShow(f"模块 {moduleConfig['name']} 导入成功!,重启生效",color=Qt.darkGreen)
+        except Exception as e:
+            print("导入模块异常:" + str(e))
+            self.setMessageShow("导入模块异常:" + str(e),color=Qt.red)
+            raise
+
+    def setMessageShow(self, message:str, color:Qt.GlobalColor = Qt.red):
+        paletter = QPalette()
+        paletter.setColor(QPalette.WindowText, color)
+        self.ui_moduleManage.messageShow.setPalette(paletter)
+        self.ui_moduleManage.messageShow.setText(message)
+
+    def loadModulesConfig(self):
+        removeAllItemForGrid(self.ui_moduleManage.content)
+
+        modulesConfigPath = pathlib.Path(modulesPath / "config.fx")
+        if not os.path.exists(modulesConfigPath):
+            print("模块配置文件不存在,无法加载模块信息")
+            self.setMessageShow("模块配置文件不存在,无法加载模块信息",color=Qt.red)
+            return []
+        with open(modulesConfigPath,mode = 'r',encoding='utf-8') as f:
+            try:
+                modulesConfig:list = json.load(f)
+            except Exception as e:
+                print("模块配置文件解析异常:" + str(e))
+                self.setMessageShow("模块配置文件解析异常:" + str(e),color=Qt.red)
+                modulesConfig:list = []
+        try:
+            for row,moduleConfig in enumerate(modulesConfig,start = 1):
+                print(f"加载模块信息{row}: {moduleConfig.get('name','未知模块')}\n")
+                self.setMessageShow(f"加载模块信息{row}: {moduleConfig.get('name','未知模块')}",color=Qt.darkYellow)
+                moduleObjectName:str = moduleConfig.get("objectName",None)
+                moduleName:str = moduleConfig.get("name",None)
+                button = QPushButton("卸载")
+                button.clicked.connect(lambda state, name = moduleObjectName: self.uninstallModule(name))
+                label = QLabel(moduleName)
+                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.ui_moduleManage.content.layout().addWidget(label,row,1,2,1)
+                self.ui_moduleManage.content.layout().addWidget(button,row,3,2,1)
+            space = QSpacerItem(0, 0, QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
+            self.ui_moduleManage.content.addItem(space)
+        except Exception as e:
+            print("加载模块配置异常:" + str(e))
+            self.setMessageShow("加载模块配置异常:" + str(e),color=Qt.red)
+        print("加载模块配置完成")
+        self.setMessageShow("加载模块配置完成",color=Qt.darkGreen)
+
+    def uninstallModule(self,objectName:str):
+        try:
+            modulesConfigPath = pathlib.Path(modulesPath / "config.fx")
+            with open(modulesConfigPath,mode = 'r',encoding='utf-8') as f:
+                try:
+                    modulesConfig:list = json.load(f)
+                except Exception as e:
+                    print("模块配置文件解析异常:" + str(e))
+                    self.setMessageShow("模块配置文件解析异常:" + str(e),color=Qt.red)
+                    return
+            uninstallModuleConfig = None
+            for idx,module in enumerate(modulesConfig):
+                if module.get("objectName","") == objectName:
+                    uninstallModuleConfig = module
+                    modulesConfig.pop(idx)
+                    break
+            if not uninstallModuleConfig:
+                print("未找到模块信息,无法卸载")
+                self.setMessageShow("未找到模块信息,无法卸载",color=Qt.red)
+                return
+            uninstallModulePath: pathlib.Path = pathlib.Path(modulesPath / uninstallModuleConfig.get("objectName"))
+
+            print("正在停止对应模块程序中...")
+            self.setMessageShow("正在停止对应模块程序中...",color=Qt.darkYellow)
+            moduleData:dict = modulesData.get(uninstallModuleConfig.get("name"),None)
+            program:subprocess.Popen = None
+            if moduleData:
+                program:subprocess.Popen = uninstallModuleConfig.get("program",None)
+            if program and program.poll() is None:
+                program.stdin.write(json.dumps({"aim":"exit"}) + "\n")
+                time_sleep(1)
+                if program.poll() is None:
+                    program.kill()
+                    print("强制终止模块程序\n")
+                    self.setMessageShow("强制终止模块程序中",color=Qt.darkYellow)
+
+            if os.path.exists(uninstallModulePath):
+                shutil.rmtree(uninstallModulePath, ignore_errors=True)
+                print(f"删除模块文件中...",uninstallModulePath)
+                self.setMessageShow(f"删除模块文件中...",color=Qt.darkYellow)
+            else:
+                print("模块文件不存在，可能已损坏，继续卸载\n")
+                self.setMessageShow("模块文件不存在，可能已损坏，继续卸载\n",color=Qt.darkYellow)
+            with open(modulesConfigPath,mode = 'w',encoding='utf-8') as f:
+                json.dump(modulesConfig,f,indent=4,ensure_ascii=False)
+            print(f"模块{uninstallModuleConfig.get('name')}卸载成功!重启软件生效\n")
+            self.setMessageShow(f"模块 {uninstallModuleConfig.get('objectName')} 卸载成功!重启软件生效",color=Qt.darkGreen)
+        except Exception as e:
+            print("卸载模块异常:" + str(e))
+            self.setMessageShow("卸载模块异常:" + str(e),color=Qt.red)
+            raise
+
+    def showEvent(self, event):
+        self.loadModulesConfig()
+        return super().showEvent(event)
+
 #登录线程
 class LoginThread(QRunnable):
     global session, userId, userPwd
@@ -1283,18 +1467,163 @@ def selectAFolder(self,message:str = "请选择文件夹"):
     else:
         return 0,"用户取消了选择",None
 
-def selectAFile(self,message:str = "请选择文件"):
+def selectAFile(self,message:str = "请选择文件",filter:str = "所有文件 (*.*)"):
     filePath, _ = QFileDialog.getOpenFileName(
         self,
         message,
         None,
+        filter,
     )
     if filePath:
         return 1,"选中成功",filePath
     else:
         return 0,"用户取消了选择",None
 
+#解压文件
+def unzipFile(self,zipFilePath:pathlib.Path,destDir:pathlib.Path):
+    try:
+        with zipfile.ZipFile(zipFilePath, 'r') as zip_ref:
+            zip_ref.extractall(destDir)
+        return 1,"解压成功",None
+    except Exception as e:
+        return 0,"解压异常:" + str(e),None
 
+#删除布局中的所有控件
+def removeAllItemForGrid(layout):
+    try:
+        while layout.count() > 0:
+            layout_item = layout.takeAt(0)
+            widget = layout_item.widget()
+            if widget:
+                widget.deleteLater()
+            del layout_item 
+    except Exception as e:
+        print("清空布局异常:" + str(e) + "\n")
+
+def popen_with_job(*args, **kwargs):
+    """
+    创建与父进程有附属关系的子进程（Windows 专用）。
+    父进程退出时，子进程会被操作系统自动终止。
+    自动隐藏子进程的控制台窗口（对于控制台程序有效）。
+    参数与 subprocess.Popen 完全相同。
+    返回的 proc 对象与普通 Popen 对象一致。
+    """
+    # ---------- Windows 常量和结构体定义 ----------
+    CREATE_NO_WINDOW = 0x08000000
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000
+    SW_HIDE = 0  # 隐藏窗口
+
+    kernel32 = ctypes.windll.kernel32
+
+    # 定义扩展限制信息结构体（完整字段）
+    class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_int64),
+            ("PerJobUserTimeLimit", ctypes.c_int64),
+            ("LimitFlags", ctypes.c_uint32),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", ctypes.c_uint32),
+            ("Affinity", ctypes.c_void_p),
+            ("PriorityClass", ctypes.c_uint32),
+            ("SchedulingClass", ctypes.c_uint32),
+        ]
+
+    class IO_COUNTERS(ctypes.Structure):
+        _fields_ = [
+            ("ReadOperationCount", ctypes.c_uint64),
+            ("WriteOperationCount", ctypes.c_uint64),
+            ("OtherOperationCount", ctypes.c_uint64),
+            ("ReadTransferCount", ctypes.c_uint64),
+            ("WriteTransferCount", ctypes.c_uint64),
+            ("OtherTransferCount", ctypes.c_uint64),
+        ]
+
+    class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+            ("IoInfo", IO_COUNTERS),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    # 显式指定 API 函数的参数类型和返回类型
+    kernel32.CreateJobObjectW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p]
+    kernel32.CreateJobObjectW.restype = ctypes.c_void_p
+
+    kernel32.SetInformationJobObject.argtypes = [
+        ctypes.c_void_p,           # hJob
+        ctypes.c_int,              # JobObjectInfoClass
+        ctypes.c_void_p,           # lpJobObjectInfo
+        ctypes.c_uint32            # cbJobObjectInfoLength
+    ]
+    kernel32.SetInformationJobObject.restype = ctypes.c_bool
+
+    kernel32.AssignProcessToJobObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    kernel32.AssignProcessToJobObject.restype = ctypes.c_bool
+
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel32.CloseHandle.restype = ctypes.c_bool
+
+    # ---------- 1. 创建作业对象 ----------
+    job = kernel32.CreateJobObjectW(None, None)
+    if not job:
+        raise OSError("创建作业对象失败")
+
+    try:
+        # ---------- 2. 设置作业限制：关闭作业句柄时终止所有进程 ----------
+        limit_info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        limit_info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+
+        if not kernel32.SetInformationJobObject(
+            job,
+            9,  # JobObjectExtendedLimitInformation
+            ctypes.byref(limit_info),
+            ctypes.sizeof(limit_info)
+        ):
+            error_code = kernel32.GetLastError()
+            raise OSError(f"设置作业限制失败，错误码: {error_code} (0x{error_code:08X})")
+
+        # ---------- 3. 自动添加隐藏窗口的设置（如果用户未指定）----------
+        # 复制 kwargs 避免修改原始字典
+        popen_kwargs = kwargs.copy()
+
+        # 处理 creationflags：如果没有显式设置，则添加 CREATE_NO_WINDOW
+        if 'creationflags' not in popen_kwargs:
+            popen_kwargs['creationflags'] = CREATE_NO_WINDOW
+        else:
+            # 如果用户已经设置了 creationflags，则按位或添加 CREATE_NO_WINDOW
+            popen_kwargs['creationflags'] |= CREATE_NO_WINDOW
+
+        # 处理 startupinfo：如果没有显式设置，则创建一个并设置隐藏窗口
+        if 'startupinfo' not in popen_kwargs:
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = SW_HIDE
+            popen_kwargs['startupinfo'] = startupinfo
+        else:
+            # 如果用户提供了 startupinfo，则确保隐藏窗口设置有效
+            si = popen_kwargs['startupinfo']
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = SW_HIDE
+
+        # ---------- 4. 启动子进程 ----------
+        proc = subprocess.Popen(*args, **popen_kwargs)
+
+        # ---------- 5. 将子进程加入作业 ----------
+        if not kernel32.AssignProcessToJobObject(job, int(proc._handle)):
+            error_code = kernel32.GetLastError()
+            raise OSError(f"将进程加入作业失败，错误码: {error_code} (0x{error_code:08X})")
+
+        # 将作业句柄附加到 proc 对象，防止被垃圾回收
+        proc._job = job
+        return proc
+
+    except Exception:
+        kernel32.CloseHandle(job)
+        raise
 #恢复所有按钮为可点击状态
 def restoreAllToolButton(mainWindow):
     for btnName in toolButtonNameList:

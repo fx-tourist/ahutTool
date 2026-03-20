@@ -1,1 +1,80 @@
 PySide6
+ui_login_widget实例已创建
+
+正在获取登录界面背景...
+
+软件数据路径:C:\Users\梵星\AppData\Roaming\ahutTool
+
+登录选项数据:{'autoLogin': True, 'id': '249074144', 'pwd': '20060612'}
+
+开启自动登录
+
+登录按钮被点击
+
+登录信息:249074144 20060612
+
+已加载模块列表:[{'name': '抢课助手', 'objectName': 'robClasses', 'path': 'robClassesModule.exe'}]
+
+登录界面背景获取成功!
+
+Ui_userInfo_widget显示事件被触发
+
+正在获取当前学期...
+
+正在获取用户信息...
+
+正在获取用户头像...
+
+当前学期:2025-2026-2
+
+用户头像获取成功!
+
+用户信息获取成功!
+
+正在填充appInfo
+
+填充appInfo成功:<!doctype html>
+<html lang=en>
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+
+
+模块按钮被点击,模块信息:{'name': '抢课助手', 'objectName': 'robClasses', 'path': 'robClassesModule.exe'}
+
+启动模块抢课助手的输出捕获线程
+
+向模块抢课助手发送数据:
+{'appVersionInt': 24, 'aim': 'init'}
+
+模块抢课助手的数据:
+{'setMessageShow': {'text': '连接服务器中...', 'color': 'green'}, 'getVals': ['userId', 'userPwd', 'cookies'], 'autoPost': True, 'postData': {'aim': 'init'}}
+模块请求获取变量userId的值
+
+模块请求获取变量userPwd的值
+
+向模块抢课助手发送数据:
+{'aim': 'init', 'postVals': {'userId': '249074144', 'userPwd': '20060612', 'cookies': {'JSESSIONID': '62625C4E34AC19643D4514C64B5E146C', 'SERVERID_jwxt': 'pc129'}}}
+
+模块抢课助手的数据:
+{'autoPost': 1, 'postData': {'aim': 'setHome', 'uuid': 'd250a171-af5d-4761-95ee-383c3181214a'}, 'setColor': 'Red', 'setMessageShow': {'text': '收到服务器数据', 'color': 'darkGreen'}}
+向模块抢课助手发送数据:
+{'aim': 'setHome', 'uuid': 'd250a171-af5d-4761-95ee-383c3181214a'}
+
+模块抢课助手的数据:
+{'autoPost': 0, 'postData': {'uuid': 'd250a171-af5d-4761-95ee-383c3181214a', 'aim': 'heartBeat'}, 'aim': 'heartBeat', 'setUi': {'main': [[{'type': 'label', 'text': '请选择选课模式', 'wordWrap': True, 'col': 1, 'colSpan': 2, 'fontSize': 16, 'height': 35}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 10}], [{'type': 'pushButton', 'text': '本学期课程抢课', 'key': 'rush_mode', 'val': 0, 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'pushButton', 'text': '跨年级专业内抢课', 'key': 'rush_mode', 'val': 1, 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'pushButton', 'text': '跨专业抢课', 'key': 'rush_mode', 'val': 2, 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'pushButton', 'text': '公选课抢课', 'key': 'rush_mode', 'val': 3, 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'pushButton', 'text': '查看抢课任务', 'key': 'view_tasks', 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}]], 'postData': {'uuid': 'd250a171-af5d-4761-95ee-383c3181214a', 'aim': 'buttonPush'}}, 'setMessageShow': {'text': '收到服务器数据', 'color': 'darkGreen'}}
+主界面关闭事件被触发,正在保存数据
+
+向模块抢课助手发送数据:
+{'aim': 'hidden'}
+
+正在关闭模块抢课助手
+
+模块线程抢课助手已退出
+
+模块抢课助手未正常关闭,正在强制终止
+
+模块抢课助手已关闭
+
+模块抢课助手的数据:
+{'autoPost': 0, 'postData': {'uuid': 'd250a171-af5d-4761-95ee-383c3181214a', 'aim': 'heartBeat'}, 'aim': 'heartBeat', 'setUi': {'main': [[{'type': 'label', 'text': '请选择选课模式', 'wordWrap': True, 'col': 1, 'colSpan': 2, 'fontSize': 16, 'height': 35}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 10}], [{'type': 'pushButton', 'text': '本学期课程抢课', 'key': 'rush_mode', 'val': 0, 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'pushButton', 'text': '跨年级专业内抢课', 'key': 'rush_mode', 'val': 1, 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'pushButton', 'text': '跨专业抢课', 'key': 'rush_mode', 'val': 2, 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'pushButton', 'text': '公选课抢课', 'key': 'rush_mode', 'val': 3, 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'air', 'col': 1, 'colSpan': 2, 'height': 8}], [{'type': 'pushButton', 'text': '查看抢课任务', 'key': 'view_tasks', 'postUrl': 'https://mc.fx-home.cloudns.be/robClasses', 'col': 1, 'colSpan': 2, 'fontSize': 14, 'height': 45}]], 'postData': {'uuid': 'd250a171-af5d-4761-95ee-383c3181214a', 'aim': 'buttonPush'}}, 'setMessageShow': {'text': '发生错误: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)', 'color': 'red'}}
