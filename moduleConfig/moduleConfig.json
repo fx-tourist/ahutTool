@@ -1,7 +1,0 @@
-{
-    "name":"抢课助手py",
-    "objectName":"pytest",
-    "path": "test.py",
-    "runArgs" : "python",
-    "closeWindow" : 0
-}
