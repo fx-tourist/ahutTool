@@ -14,7 +14,6 @@ import shutil
 from bs4 import BeautifulSoup
 import os,json
 import ctypes
-import ctypes.wintypes
 from time import sleep as time_sleep
 # 导入编译后的主UI和子UI类
 from ui_py.ui_form import Ui_main
@@ -225,9 +224,9 @@ class Main(QWidget):
                 print(f"正在关闭模块{moduleName}\n")
                 program.stdin.write("{'aim':'exit'}\n")
                 program.stdin.flush()
+                time_sleep(0.2)
                 program.stdin.close()
                 program.stdout.close()
-                time_sleep(0.2)
                 if program.poll() is None:
                     print(f"模块{moduleName}未正常关闭,正在强制终止\n")
                     program.kill()
@@ -956,10 +955,12 @@ class Ui_module_widget(QWidget):
                     self.currentProgram = popen_with_job([str(setModuleData.get("runArgs")), str(self.currentModulePath)], 
                                         stdin=subprocess.PIPE , 
                                         stdout=subprocess.PIPE, 
+                                        stderr=subprocess.PIPE,
                                         text=True) if setModuleData.get("runArgs",None) else \
                                         popen_with_job([str(self.currentModulePath)], 
                                         stdin=subprocess.PIPE,  
                                         stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
                                         text=True)
                     modulesData[self.currentModuleName] = {
                         "program" : self.currentProgram,
@@ -1017,7 +1018,7 @@ class Ui_module_widget(QWidget):
                     print(f"收到模块的数据{key} = {val}\n")
 
             if msg.get("setMessageShow",None) != None:
-                self.setMessageShow(msg["setMessageShow"].get("text",""), color=msg["setMessageShow"].get("color","red"))
+                self.setMessageShow(msg["setMessageShow"].get("text",""), color=getattr(Qt, msg["setMessageShow"].get("color", "red")))
             
             if msg.get("setUi",None) != None:
                 self.setUi(msg["setUi"])
@@ -1053,7 +1054,7 @@ class Ui_module_widget(QWidget):
                         element.textChanged.connect(lambda line,key = item["key"]: self.lineEditChanged(key,line))
                     if elementType == "pushButton":
                         element = QPushButton(item.get("text",""))
-                        element.clicked.connect(lambda state, btnKey = item["key"],url = item["postUrl"],val = item.get("val",""): self.buttonClicked(btnKey,url,val))
+                        element.clicked.connect(lambda state, btnKey = item["key"],val = item.get("val",""): self.buttonClicked(btnKey,val))
                         font.setPointSize(item.get("fontSize",12))
                         element.setFont(font)
                     if elementType == "air":
@@ -1087,7 +1088,7 @@ class Ui_module_widget(QWidget):
         print(f"输入控件:{key}:{text}\n")
         self.postData[key] = text
     
-    def buttonClicked(self,btnKey:str,postUrl:str,val:str = ""):
+    def buttonClicked(self,btnKey:str,val:str = ""):
         if self.lock:
             print("请稍后,模块正在处理消息中...\n")
             self.setMessageShow("请稍后,模块正在处理消息中...",color=Qt.darkYellow)
