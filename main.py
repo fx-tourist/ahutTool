@@ -222,16 +222,12 @@ class Main(QWidget):
             program:subprocess.Popen = moduleData.get("program")
             if program and program.poll() is None:
                 print(f"正在关闭模块{moduleName}\n")
-                program.stdin.write("{'aim':'exit'}\n")
+                program.stdin.write(json.dumps({'aim':'exit'}))
                 program.stdin.flush()
                 time_sleep(0.2)
-                program.stdin.close()
-                program.stdout.close()
-                if program.poll() is None:
-                    print(f"模块{moduleName}未正常关闭,正在强制终止\n")
-                    program.kill()
-                
-            print(f"模块{moduleName}已关闭\n")
+            if program and program.poll() is None:
+                print(f"强制终止模块{moduleName}\n")
+                killProcessAndChildren(program.pid)
 
     def showUi(self,uiName:str):
         try:
@@ -1050,7 +1046,7 @@ class Ui_module_widget(QWidget):
                         font.setPointSize(item.get("fontSize",12))
                         element.setFont(font)
                         element.setText(item.get("text",""))
-                        self.postData[item["key"]] = item.get("text","")
+                        self.postData[item["key"]] = item.get("text","") if item.get("text","")  != None else ""
                         element.textChanged.connect(lambda line,key = item["key"]: self.lineEditChanged(key,line))
                     if elementType == "pushButton":
                         element = QPushButton(item.get("text",""))
@@ -1207,6 +1203,10 @@ class Ui_moduleManager_widget(QWidget):
                     print("已存在同objectName的模块,无法安装")
                     self.setMessageShow("已存在同objectName的模块,无法安装",color=Qt.red)
                     return
+            if os.path.exists(modulePath):
+                shutil.rmtree(modulePath, ignore_errors=True)
+                print(f"删除已存在的同objectName的模块文件中...",modulePath)
+                self.setMessageShow(f"删除已存在的同objectName的模块文件中...",color=Qt.darkYellow)
             os.rename(tempPath, modulePath)
             if not os.path.exists(modulePath):
                 print("模块重命名失败,无法安装\n")
@@ -1294,11 +1294,12 @@ class Ui_moduleManager_widget(QWidget):
             if moduleData:
                 program:subprocess.Popen = uninstallModuleConfig.get("program",None)
             if program and program.poll() is None:
-                program.stdin.write(json.dumps({"aim":"exit"}) + "\n")
-                time_sleep(1)
+                program.stdin.write(json.dumps({"aim":"exit"}))
+                program.stdin.flush()
+                time_sleep(0.2)
                 if program.poll() is None:
-                    program.kill()
                     print("强制终止模块程序\n")
+                    killProcessAndChildren(program.pid)
                     self.setMessageShow("强制终止模块程序中",color=Qt.darkYellow)
 
             if os.path.exists(uninstallModulePath):
@@ -1625,6 +1626,32 @@ def popen_with_job(*args, **kwargs):
     except Exception:
         kernel32.CloseHandle(job)
         raise
+
+def killProcessAndChildren(pid:int):
+    try:
+        subprocess.call(
+                f"taskkill /F /T /PID {pid}",
+                shell=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW  # 关键：不弹黑框
+                )
+    except Exception as e:
+        print("杀死进程及子进程异常:" + str(e) + "\n")
+
+def exitProgram(program:subprocess.Popen):
+    try:
+        if program and program.poll() is None:
+            program.stdin.write(json.dumps({"aim":"exit"}))
+            program.stdin.flush()
+            time_sleep(0.2)
+            if program.poll() is None:
+                killProcessAndChildren(program.pid)
+                print("强制终止模块程序\n")
+    except Exception as e:
+        print("退出模块程序异常:" + str(e) + "\n")
+
+
 #恢复所有按钮为可点击状态
 def restoreAllToolButton(mainWindow):
     for btnName in toolButtonNameList:
