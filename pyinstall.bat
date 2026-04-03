@@ -1,6 +1,0 @@
-pyinstaller "main.py" -F --noconsole --name "Ahut Tool 2.4" --distpath .\  --clean ^
---exclude-module unittest --exclude-module matplotlib ^
--i ".\img_src\icon_256.png" ^
---noconfirm
-
-pause
