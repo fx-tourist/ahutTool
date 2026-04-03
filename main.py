@@ -927,7 +927,8 @@ class Ui_module_widget(QWidget):
             self.setMessageShow("模块程序通信异常error 1101:" + str(e),color=Qt.red)
 
         try:
-            self.currentModulePath = pathlib.Path(modulesPath / setModuleData.get("objectName") / setModuleData.get("path"))
+            self.currentModuleFolderPath = modulesPath / setModuleData.get("objectName")
+            self.currentModulePath = pathlib.Path(self.currentModuleFolderPath / setModuleData.get("path"))
         except Exception as e:
             print("模块界面路径异常:" + str(e) + "\n")
         
@@ -939,7 +940,8 @@ class Ui_module_widget(QWidget):
 
         self.postData = {
             "appVersionInt" : appVersionInt,
-            "aim" : "show" if modulesData.get(self.currentModuleName,False) else "init"
+            "aim" : "show" if modulesData.get(self.currentModuleName,False) else "init",
+            "modulePath" : str(self.currentModuleFolderPath) 
         }
         self.currentModuleData = modulesData.get(self.currentModuleName,None)
         try:
@@ -969,6 +971,7 @@ class Ui_module_widget(QWidget):
             else:
                 print("模块程序不存在:" + str(self.currentModulePath) + "\n")
                 self.setMessageShow("模块程序不存在:" + str(self.currentModulePath),color=Qt.red)
+                return
         except Exception as e:
             print("模块程序启动异常:" + str(e) + "\n")
             self.setMessageShow("模块程序启动异常:" + str(e),color=Qt.red)
